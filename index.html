@@ -4,27 +4,209 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <title>Portal de Validaciones</title>
+  <title>Dashboard | Portal de Validaciones</title>
 </head>
 <body>
-  <main class="container py-5">
-    <div class="card shadow-sm">
-      <div class="card-body">
-        <h1 class="h3 mb-3">
-          <i class="bi bi-ticket-perforated"></i>
-          Portal de Validaciones
-        </h1>
-
-        <p class="text-muted mb-4">
-          Frontend inicial configurado con Vite, Bootstrap y Bootstrap Icons.
-        </p>
-
-        <a href="#" class="btn btn-primary">
-          Iniciar prototipo
-        </a>
+  <div class="app-layout">
+    <aside class="app-sidebar">
+      <div class="app-sidebar-brand">
+        <i class="bi bi-ticket-perforated me-2"></i>
+        Portal Validaciones
       </div>
-    </div>
-  </main>
+
+      <nav class="app-sidebar-nav">
+        <a href="index.html" class="app-sidebar-link active">
+          <i class="bi bi-speedometer2"></i>
+          Dashboard
+        </a>
+
+        <a href="validation-ticket.html" class="app-sidebar-link">
+          <i class="bi bi-upc-scan"></i>
+          Validar boleto
+        </a>
+
+        <a href="reports.html" class="app-sidebar-link">
+          <i class="bi bi-table"></i>
+          Reportes
+        </a>
+
+        <a href="users.html" class="app-sidebar-link">
+          <i class="bi bi-people"></i>
+          Usuarios
+        </a>
+
+        <a href="tenants.html" class="app-sidebar-link">
+          <i class="bi bi-shop"></i>
+          Locatarios
+        </a>
+
+        <a href="discounts.html" class="app-sidebar-link">
+          <i class="bi bi-percent"></i>
+          Descuentos
+        </a>
+      </nav>
+    </aside>
+
+    <main class="app-main">
+      <header class="app-navbar">
+        <div>
+          <h1 class="h5 mb-0">Dashboard</h1>
+          <small class="text-muted">Resumen general del portal</small>
+        </div>
+
+        <div class="dropdown">
+          <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+            <i class="bi bi-person-circle me-1"></i>
+            Administrador
+          </button>
+
+          <ul class="dropdown-menu dropdown-menu-end">
+            <li><a class="dropdown-item" href="#">Mi perfil</a></li>
+            <li><a class="dropdown-item" href="#">Cambiar contraseña</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item text-danger" href="#">Cerrar sesión</a></li>
+          </ul>
+        </div>
+      </header>
+
+      <section class="app-content">
+        <div class="row g-3 mb-4">
+          <div class="col-12 col-md-6 col-xl-3">
+            <div class="app-card app-stat-card">
+              <div class="d-flex justify-content-between align-items-center">
+                <div>
+                  <p class="text-muted mb-1">Validaciones hoy</p>
+                  <h2 class="h4 mb-0">128</h2>
+                </div>
+                <div class="app-stat-icon">
+                  <i class="bi bi-check2-circle"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12 col-md-6 col-xl-3">
+            <div class="app-card app-stat-card">
+              <div class="d-flex justify-content-between align-items-center">
+                <div>
+                  <p class="text-muted mb-1">Locatarios activos</p>
+                  <h2 class="h4 mb-0">24</h2>
+                </div>
+                <div class="app-stat-icon">
+                  <i class="bi bi-shop"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12 col-md-6 col-xl-3">
+            <div class="app-card app-stat-card">
+              <div class="d-flex justify-content-between align-items-center">
+                <div>
+                  <p class="text-muted mb-1">Usuarios activos</p>
+                  <h2 class="h4 mb-0">36</h2>
+                </div>
+                <div class="app-stat-icon">
+                  <i class="bi bi-people"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12 col-md-6 col-xl-3">
+            <div class="app-card app-stat-card">
+              <div class="d-flex justify-content-between align-items-center">
+                <div>
+                  <p class="text-muted mb-1">Errores recientes</p>
+                  <h2 class="h4 mb-0">0</h2>
+                </div>
+                <div class="app-stat-icon">
+                  <i class="bi bi-exclamation-triangle"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="row g-3">
+          <div class="col-12 col-xl-8">
+            <div class="app-card p-3">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                  <h2 class="h5 mb-0">Últimas validaciones</h2>
+                  <small class="text-muted">Movimientos recientes del portal</small>
+                </div>
+
+                <a href="reportes.html" class="btn btn-outline-primary btn-sm">
+                  Ver reportes
+                </a>
+              </div>
+
+              <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                  <thead>
+                    <tr>
+                      <th>Fecha</th>
+                      <th>Boleto</th>
+                      <th>Locatario</th>
+                      <th>Descuento</th>
+                      <th>Estado</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>2026-05-05 10:35</td>
+                      <td>123456</td>
+                      <td>Cine</td>
+                      <td>2 horas gratis</td>
+                      <td><span class="badge text-bg-success">Exitosa</span></td>
+                    </tr>
+                    <tr>
+                      <td>2026-05-05 10:22</td>
+                      <td>987654</td>
+                      <td>Gimnasio</td>
+                      <td>50% descuento</td>
+                      <td><span class="badge text-bg-success">Exitosa</span></td>
+                    </tr>
+                    <tr>
+                      <td>2026-05-05 09:58</td>
+                      <td>778899</td>
+                      <td>Restaurante</td>
+                      <td>Tarifa preferente</td>
+                      <td><span class="badge text-bg-danger">Error</span></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12 col-xl-4">
+            <div class="app-card p-3">
+              <h2 class="h5 mb-3">Acciones rápidas</h2>
+
+              <div class="d-grid gap-2">
+                <a href="validation-ticket.html" class="btn btn-primary">
+                  <i class="bi bi-upc-scan me-1"></i>
+                  Validar boleto
+                </a>
+
+                <a href="reports.html" class="btn btn-outline-secondary">
+                  <i class="bi bi-table me-1"></i>
+                  Ver historial
+                </a>
+
+                <a href="users.html" class="btn btn-outline-secondary">
+                  <i class="bi bi-person-plus me-1"></i>
+                  Crear usuario
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
 
   <script type="module" src="/src/js/app.js"></script>
 </body>
