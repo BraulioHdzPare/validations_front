@@ -1,0 +1,9 @@
+body {
+  background-color: var(--app-bg);
+}
+
+.app-card {
+  background-color: var(--app-card-bg);
+  border: 1px solid var(--app-border);
+  border-radius: 0.75rem;
+}
