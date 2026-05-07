@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Reportes | Portal de Validaciones</title>
+</head>
+<body>
+  <div class="app-layout">
+    <!-- Barra lateral de navegación -->
+    <aside class="app-sidebar"> 
+      <div class="app-sidebar-brand">
+        <i class="bi bi-ticket-perforated me-2"></i>
+        Portal Validaciones
+      </div>
+
+      <nav class="app-sidebar-nav">
+        <a href="index.html" class="app-sidebar-link">
+          <i class="bi bi-speedometer2"></i>
+          Dashboard
+        </a>
+
+        <a href="validation-ticket.html" class="app-sidebar-link">
+          <i class="bi bi-upc-scan"></i>
+          Validar boleto
+        </a>
+
+        <a href="reports.html" class="app-sidebar-link active">
+          <i class="bi bi-table"></i>
+          Reportes
+        </a>
+
+        <a href="users.html" class="app-sidebar-link">
+          <i class="bi bi-people"></i>
+          Usuarios
+        </a>
+
+        <a href="tenants.html" class="app-sidebar-link">
+          <i class="bi bi-shop"></i>
+          Locatarios
+        </a>
+
+        <a href="discounts.html" class="app-sidebar-link">
+          <i class="bi bi-percent"></i>
+          Descuentos
+        </a>
+      </nav>
+    </aside>
+
+    <!-- Contenido principal -->
+    <main class="app-main">
+        <!-- Barra de navegación superior -->
+      <header class="app-navbar">
+        <div>
+          <h1 class="h5 mb-0">Reportes</h1>
+          <small class="text-muted">Historial y trazabilidad de validaciones</small>
+        </div>
+
+        <div class="dropdown">
+          <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+            <i class="bi bi-person-circle me-1"></i>
+            Administrador
+          </button>
+
+          <ul class="dropdown-menu dropdown-menu-end">
+            <li><a class="dropdown-item" href="#">Mi perfil</a></li>
+            <li><a class="dropdown-item" href="#">Cambiar contraseña</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item text-danger" href="#">Cerrar sesión</a></li>
+          </ul>
+        </div>
+      </header>
+      
+      <section class="app-content">
+
+        <!-- Estadísticas generales -->
+        <div class="row g-3 mb-3">
+          <div class="col-12 col-md-6 col-xl-3">
+            <div class="app-card app-stat-card">
+              <div class="d-flex justify-content-between align-items-center">
+                <div>
+                  <p class="text-muted mb-1">Validaciones filtradas</p>
+                  <h2 id="totalValidations" class="h4 mb-0">0</h2>
+                </div>
+                <div class="app-stat-icon">
+                  <i class="bi bi-check2-circle"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12 col-md-6 col-xl-3">
+            <div class="app-card app-stat-card">
+              <div class="d-flex justify-content-between align-items-center">
+                <div>
+                  <p class="text-muted mb-1">Monto original</p>
+                  <h2 id="totalOriginalAmount" class="h4 mb-0">$0.00</h2>
+                </div>
+                <div class="app-stat-icon">
+                  <i class="bi bi-cash-stack"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12 col-md-6 col-xl-3">
+            <div class="app-card app-stat-card">
+              <div class="d-flex justify-content-between align-items-center">
+                <div>
+                  <p class="text-muted mb-1">Monto final</p>
+                  <h2 id="totalFinalAmount" class="h4 mb-0">$0.00</h2>
+                </div>
+                <div class="app-stat-icon">
+                  <i class="bi bi-wallet2"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12 col-md-6 col-xl-3">
+            <div class="app-card app-stat-card">
+              <div class="d-flex justify-content-between align-items-center">
+                <div>
+                  <p class="text-muted mb-1">Descuento estimado</p>
+                  <h2 id="totalDiscountAmount" class="h4 mb-0">$0.00</h2>
+                </div>
+                <div class="app-stat-icon">
+                  <i class="bi bi-percent"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Filtros de búsqueda -->
+        <div class="app-card p-3 p-md-4 mb-3">
+          <div class="d-flex flex-column flex-lg-row justify-content-between gap-3 mb-3">
+            <div>
+              <h2 class="h5 mb-1">Filtros de búsqueda</h2>
+              <small class="text-muted">Segmenta el historial por fecha, locatario, descuento o boleto.</small>
+            </div>
+
+            <div class="d-flex gap-2">
+              <button id="clearFiltersButton" type="button" class="btn btn-outline-secondary">
+                <i class="bi bi-eraser me-1"></i>
+                Limpiar
+              </button>
+
+              <button id="exportButton" type="button" class="btn btn-outline-success">
+                <i class="bi bi-file-earmark-spreadsheet me-1"></i>
+                Exportar
+              </button>
+            </div>
+          </div>
+
+          <form id="reportsFilterForm" class="row g-3">
+            <div class="col-12 col-md-6 col-xl-3">
+                <label for="startDate" class="form-label">Fecha y hora inicio</label>
+                <input type="datetime-local" id="startDate" class="form-control">
+            </div>
+
+            <div class="col-12 col-md-6 col-xl-3">
+                <label for="endDate" class="form-label">Fecha y hora fin</label>
+                <input type="datetime-local" id="endDate" class="form-control">
+            </div>
+
+            <div class="col-12 col-md-6 col-xl-3">
+              <label for="tenantFilter" class="form-label">Locatario</label>
+              <select id="tenantFilter" class="form-select">
+                <option value="">Todos</option>
+              </select>
+            </div>
+
+            <div class="col-12 col-md-6 col-xl-3">
+              <label for="discountFilter" class="form-label">Tipo de descuento</label>
+              <select id="discountFilter" class="form-select">
+                <option value="">Todos</option>
+              </select>
+            </div>
+
+            <div class="col-12 col-md-6 col-xl-3">
+              <label for="statusFilter" class="form-label">Estado</label>
+              <select id="statusFilter" class="form-select">
+                <option value="">Todos</option>
+                <option value="success">Exitosa</option>
+                <option value="error">Error</option>
+                <option value="rejected">Rechazada</option>
+              </select>
+            </div>
+
+            <div class="col-12 col-md-6 col-xl-5">
+              <label for="ticketSearch" class="form-label">Buscar boleto</label>
+              <input
+                type="text"
+                id="ticketSearch"
+                class="form-control"
+                placeholder="Ej. 123456"
+                autocomplete="off"
+              >
+            </div>
+
+            <div class="col-12 col-xl-4 d-flex align-items-end">
+              <button type="submit" class="btn btn-primary w-100">
+                <i class="bi bi-search me-1"></i>
+                Aplicar filtros
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <div id="reportsAlert" class="alert d-none" role="alert"></div>
+
+        <!-- Tabla de resultados -->
+        <div class="app-card p-3 p-md-4">
+          <div class="d-flex flex-column flex-lg-row justify-content-between gap-3 mb-3">
+            <div>
+              <h2 class="h5 mb-1">Historial de validaciones</h2>
+              <small class="text-muted">Movimientos registrados en el portal.</small>
+            </div>
+
+            <span id="resultCountBadge" class="badge text-bg-light align-self-start">
+              0 registros
+            </span>
+          </div>
+
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead>
+                <tr>
+                  <th>Fecha</th>
+                  <th>Boleto</th>
+                  <th>Locatario</th>
+                  <th>Usuario</th>
+                  <th>Descuento</th>
+                  <th>Monto original</th>
+                  <th>Monto final</th>
+                  <th>Estado</th>
+                  <th class="text-end">Acciones</th>
+                </tr>
+              </thead>
+
+              <tbody id="reportsTableBody">
+                <tr>
+                  <td colspan="9" class="text-center text-muted py-4">
+                    Cargando registros...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Modal de detalle de validación -->
+  <div class="modal fade" id="validationDetailModal" tabindex="-1" aria-labelledby="validationDetailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title h5" id="validationDetailModalLabel">Detalle de validación</h2>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-12 col-md-4">
+              <small class="text-muted d-block">Fecha y hora</small>
+              <strong id="detailDate">-</strong>
+            </div>
+
+            <div class="col-12 col-md-4">
+              <small class="text-muted d-block">Boleto</small>
+              <strong id="detailTicket">-</strong>
+            </div>
+
+            <div class="col-12 col-md-4">
+              <small class="text-muted d-block">Estado</small>
+              <span id="detailStatus" class="badge">-</span>
+            </div>
+
+            <div class="col-12 col-md-4">
+              <small class="text-muted d-block">Locatario</small>
+              <strong id="detailTenant">-</strong>
+            </div>
+
+            <div class="col-12 col-md-4">
+              <small class="text-muted d-block">Usuario</small>
+              <strong id="detailUser">-</strong>
+            </div>
+
+            <div class="col-12 col-md-4">
+              <small class="text-muted d-block">Descuento</small>
+              <strong id="detailDiscount">-</strong>
+            </div>
+
+            <div class="col-12 col-md-4">
+              <small class="text-muted d-block">Monto original</small>
+              <strong id="detailOriginalAmount">-</strong>
+            </div>
+
+            <div class="col-12 col-md-4">
+              <small class="text-muted d-block">Monto final</small>
+              <strong id="detailFinalAmount">-</strong>
+            </div>
+
+            <div class="col-12 col-md-4">
+              <small class="text-muted d-block">Monto descontado</small>
+              <strong id="detailDiscountAmount">-</strong>
+            </div>
+
+            <div class="col-12">
+              <small class="text-muted d-block">Mensaje del sistema</small>
+              <div id="detailMessage" class="border rounded-3 p-3 bg-light mt-1">
+                -
+              </div>
+            </div>
+
+            <div class="col-12 col-md-6">
+              <small class="text-muted d-block">IP de usuario</small>
+              <strong id="detailIp">-</strong>
+            </div>
+
+            <div class="col-12 col-md-6">
+              <small class="text-muted d-block">ID respuesta Designa</small>
+              <strong id="detailDesignaResponseId">-</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+            Cerrar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/src/js/app.js"></script>
+  <script type="module" src="/src/js/reports.js"></script>
+</body>
+</html>
