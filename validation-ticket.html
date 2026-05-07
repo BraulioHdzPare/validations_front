@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Validar boleto | Portal de Validaciones</title>
+</head>
+<body>
+  <div class="app-layout">
+    <aside class="app-sidebar">
+      <div class="app-sidebar-brand">
+        <i class="bi bi-ticket-perforated me-2"></i>
+        Portal Validaciones
+      </div>
+
+      <nav class="app-sidebar-nav">
+        <a href="index.html" class="app-sidebar-link">
+          <i class="bi bi-speedometer2"></i>
+          Dashboard
+        </a>
+
+        <a href="validation-ticket.html" class="app-sidebar-link active">
+          <i class="bi bi-upc-scan"></i>
+          Validar boleto
+        </a>
+
+        <a href="reports.html" class="app-sidebar-link">
+          <i class="bi bi-table"></i>
+          Reportes
+        </a>
+
+        <a href="users.html" class="app-sidebar-link">
+          <i class="bi bi-people"></i>
+          Usuarios
+        </a>
+
+        <a href="tenants.html" class="app-sidebar-link">
+          <i class="bi bi-shop"></i>
+          Locatarios
+        </a>
+
+        <a href="discounts.html" class="app-sidebar-link">
+          <i class="bi bi-percent"></i>
+          Descuentos
+        </a>
+      </nav>
+    </aside>
+
+    <main class="app-main">
+      <header class="app-navbar">
+        <div>
+          <h1 class="h5 mb-0">Validar boleto</h1>
+          <small class="text-muted">Consulta y aplicación de validaciones</small>
+        </div>
+
+        <div class="dropdown">
+          <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+            <i class="bi bi-person-circle me-1"></i>
+            Administrador
+          </button>
+
+          <ul class="dropdown-menu dropdown-menu-end">
+            <li><a class="dropdown-item" href="#">Mi perfil</a></li>
+            <li><a class="dropdown-item" href="#">Cambiar contraseña</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item text-danger" href="#">Cerrar sesión</a></li>
+          </ul>
+        </div>
+      </header>
+
+      <section class="app-content">
+        <div class="row g-3">
+          <div class="col-12 col-xl-8">
+            <div class="app-card p-3 p-md-4">
+              <div class="mb-4">
+                <h2 class="h5 mb-1">Consulta de boleto</h2>
+                <p class="text-muted mb-0">
+                  Ingresa el número de boleto manualmente o mediante escáner.
+                </p>
+              </div>
+
+              <form id="ticketSearchForm" class="row g-3 mb-4">
+                <div class="col-12 col-md-8">
+                  <label for="ticketNumber" class="form-label">Número de boleto</label>
+                  <input
+                    type="text"
+                    class="form-control form-control-lg"
+                    id="ticketNumber"
+                    name="ticketNumberInput"
+                    placeholder="Ej. 123456"
+                    autocomplete="off"
+                    required
+                  >
+                  <div class="form-text">
+                    El campo está preparado para captura rápida con lector de código de barras.
+                  </div>
+                </div>
+
+                <div class="col-12 col-md-4 d-flex align-items-start align-items-md-end">
+                  <button type="submit" class="btn btn-primary btn-lg w-100">
+                    <i class="bi bi-search me-1"></i>
+                    Buscar
+                  </button>
+                </div>
+              </form>
+
+              <div id="ticketAlert" class="alert d-none" role="alert"></div>
+
+              <div id="ticketResult" class="d-none">
+                <hr class="my-4">
+
+                <div class="d-flex flex-column flex-md-row justify-content-between gap-3 mb-3">
+                  <div>
+                    <h3 class="h5 mb-1">Información del boleto</h3>
+                    <small class="text-muted">Datos obtenidos desde el simulador de Designa</small>
+                  </div>
+
+                  <span id="ticketStatusBadge" class="badge align-self-start"></span>
+                </div>
+
+                <div class="row g-3 mb-4">
+                  <div class="col-12 col-md-6">
+                    <div class="border rounded-3 p-3 bg-light">
+                      <small class="text-muted d-block">Boleto</small>
+                      <strong id="resultTicketNumber">-</strong>
+                    </div>
+                  </div>
+
+                  <div class="col-12 col-md-6">
+                    <div class="border rounded-3 p-3 bg-light">
+                      <small class="text-muted d-block">Fecha de entrada</small>
+                      <strong id="resultEntryDate">-</strong>
+                    </div>
+                  </div>
+
+                  <div class="col-12 col-md-4">
+                    <div class="border rounded-3 p-3 bg-light">
+                      <small class="text-muted d-block">Tarifa actual</small>
+                      <strong id="resultRate">-</strong>
+                    </div>
+                  </div>
+
+                  <div class="col-12 col-md-4">
+                    <div class="border rounded-3 p-3 bg-light">
+                      <small class="text-muted d-block">Monto original</small>
+                      <strong id="resultOriginalAmount">-</strong>
+                    </div>
+                  </div>
+
+                  <div class="col-12 col-md-4">
+                    <div class="border rounded-3 p-3 bg-light">
+                      <small class="text-muted d-block">Monto actual</small>
+                      <strong id="resultCurrentAmount">-</strong>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="mb-3">
+                  <label for="discountType" class="form-label">Validación disponible</label>
+                  <select id="discountType" class="form-select form-select-lg">
+                    <option value="">Selecciona una validación</option>
+                  </select>
+                </div>
+
+                <div class="d-flex justify-content-end gap-2">
+                  <button id="clearTicketButton" type="button" class="btn btn-outline-secondary">
+                    Limpiar
+                  </button>
+
+                  <button id="openConfirmModalButton" type="button" class="btn btn-success" disabled>
+                    <i class="bi bi-check2-circle me-1"></i>
+                    Aplicar validación
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12 col-xl-4">
+            <div class="app-card p-3 p-md-4 mb-3">
+              <h2 class="h5 mb-3">Guía rápida</h2>
+
+              <ol class="text-muted mb-0 ps-3">
+                <li>Ingresa o escanea el número de boleto.</li>
+                <li>Verifica que el boleto esté activo.</li>
+                <li>Selecciona una validación permitida.</li>
+                <li>Confirma la aplicación del descuento.</li>
+              </ol>
+            </div>
+
+            <div class="app-card p-3 p-md-4">
+              <h2 class="h5 mb-3">Casos de prueba</h2>
+
+              <div class="d-grid gap-2">
+                <button class="btn btn-outline-primary btn-sm test-ticket-btn" type="button" data-ticket="123456">
+                  Boleto activo: 123456
+                </button>
+
+                <button class="btn btn-outline-primary btn-sm test-ticket-btn" type="button" data-ticket="987654">
+                  Boleto pagado: 987654
+                </button>
+
+                <button class="btn btn-outline-primary btn-sm test-ticket-btn" type="button" data-ticket="555000">
+                  Boleto con error: 555000
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="modal fade" id="confirmValidationModal" tabindex="-1" aria-labelledby="confirmValidationModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title h5" id="confirmValidationModalLabel">Confirmar validación</h2>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+
+        <div class="modal-body">
+          <p class="mb-2">¿Deseas aplicar la siguiente validación?</p>
+
+          <div class="border rounded-3 p-3 bg-light">
+            <div class="mb-2">
+              <small class="text-muted d-block">Boleto</small>
+              <strong id="modalTicketNumber">-</strong>
+            </div>
+
+            <div class="mb-2">
+              <small class="text-muted d-block">Validación</small>
+              <strong id="modalDiscountName">-</strong>
+            </div>
+
+            <div class="row">
+              <div class="col-6">
+                <small class="text-muted d-block">Monto actual</small>
+                <strong id="modalCurrentAmount">-</strong>
+              </div>
+
+              <div class="col-6">
+                <small class="text-muted d-block">Monto estimado final</small>
+                <strong id="modalFinalAmount">-</strong>
+              </div>
+            </div>
+          </div>
+
+          <div class="alert alert-warning mt-3 mb-0">
+            Esta acción simula una modificación en el sistema central Designa.
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+            Cancelar
+          </button>
+
+          <button id="confirmValidationButton" type="button" class="btn btn-success">
+            Confirmar validación
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/src/js/app.js"></script>
+  <script type="module" src="/src/js/validation.js"></script>
+</body>
+</html>
