@@ -219,30 +219,39 @@ userForm?.addEventListener('submit', (event) => {
   modal.hide();
 });
 
-//
+// Deshabilitar campo de locatario si el rol es admin
 formRole?.addEventListener('change', () => {
   if (formRole.value === 'admin') {
     formTenant.value = '';
   }
 });
 
+// Cargar opciones de filtros y formulario
 function loadFilterOptions() {
   renderSelectOptions(tenantFilter, tenantsMock);
 }
 
+// Cargar opciones de locatarios en el formulario
 function loadFormOptions() {
   renderSelectOptions(formTenant, tenantsMock);
 }
 
+// Función para renderizar opciones en un elemento select
 function renderSelectOptions(selectElement, values) {
+  const fragment = document.createDocumentFragment();
+
   values.forEach((value) => {
     const option = document.createElement('option');
     option.value = value;
     option.textContent = value;
-    selectElement.appendChild(option);
+    fragment.appendChild(option);
   });
+
+  // Una sola inserción al DOM real
+  selectElement.appendChild(fragment);
 }
 
+// Renderizar checkboxes de permisos basados en los descuentos
 function renderPermissionCheckboxes() {
   discountPermissionsContainer.innerHTML = discountsMock.map((discount) => `
     <div class="col-12 col-md-6">
@@ -261,6 +270,7 @@ function renderPermissionCheckboxes() {
   `).join('');
 }
 
+// Función para retornar usuarios filtrados según criterios de búsqueda y filtros aplicados
 function filterUsers() {
   const search = userSearch.value.trim().toLowerCase();
   const role = roleFilter.value;
@@ -282,6 +292,7 @@ function filterUsers() {
   });
 }
 
+// Función para renderizar la tabla de usuarios según los resultados filtrados
 function renderUsers(users) {
   updateSummary();
   updateResultCount(users.length);
@@ -357,6 +368,7 @@ function renderUsers(users) {
   `).join('');
 }
 
+// Función para actualizar los contadores de resumen en la parte superior de la página
 function updateSummary() {
   totalUsers.textContent = String(usersMock.length);
   activeUsers.textContent = String(usersMock.filter((user) => user.status === 'active').length);
@@ -364,10 +376,12 @@ function updateSummary() {
   tenantUsers.textContent = String(usersMock.filter((user) => user.role === 'tenant_user').length);
 }
 
+// Función para actualizar el contador de resultados mostrados según los filtros aplicados
 function updateResultCount(count) {
   usersResultCountBadge.textContent = `${count} usuario${count === 1 ? '' : 's'}`;
 }
 
+// Función para renderizar el badge de rol con estilos diferenciados para admin y locatario
 function renderRoleBadge(user) {
   if (user.role === 'admin') {
     return `<span class="badge text-bg-primary">${user.roleText}</span>`;
@@ -376,6 +390,7 @@ function renderRoleBadge(user) {
   return `<span class="badge text-bg-info">${user.roleText}</span>`;
 }
 
+// Función para renderizar el badge de estado con estilos diferenciados para activo e inactivo
 function renderStatusBadge(user) {
   if (user.status === 'active') {
     return `<span class="badge text-bg-success">${user.statusText}</span>`;
@@ -384,6 +399,7 @@ function renderStatusBadge(user) {
   return `<span class="badge text-bg-secondary">${user.statusText}</span>`;
 }
 
+// Función para abrir el modal de creación/edición de usuario, precargando datos si se proporciona un usuario
 function openUserFormModal(user = null) {
   userForm.reset();
   userId.value = '';
@@ -408,6 +424,7 @@ function openUserFormModal(user = null) {
   modal.show();
 }
 
+// Función para crear un nuevo usuario con los datos del formulario y permisos seleccionados
 function createUser(selectedPermissions) {
   const newUser = {
     id: getNextUserId(),
@@ -425,6 +442,7 @@ function createUser(selectedPermissions) {
   usersMock = [newUser, ...usersMock];
 }
 
+// Función para actualizar un usuario existente con los datos del formulario y permisos seleccionados
 function updateUser(id, selectedPermissions) {
   usersMock = usersMock.map((user) => {
     if (user.id !== id) {
@@ -446,6 +464,7 @@ function updateUser(id, selectedPermissions) {
   });
 }
 
+// Función para alternar el estado activo/inactivo de un usuario y actualizar la tabla en consecuencia
 function toggleUserStatus(user) {
   const newStatus = user.status === 'active' ? 'inactive' : 'active';
 
@@ -470,10 +489,12 @@ function toggleUserStatus(user) {
   );
 }
 
+// Función para simular el restablecimiento de contraseña de un usuario, mostrando una alerta de éxito
 function resetUserPassword(user) {
   showAlert('success', `Contraseña de ${user.username} restablecida de forma simulada.`);
 }
 
+// Función para mostrar el modal de detalle de usuario con toda su información y permisos asignados
 function showUserDetail(user) {
   detailUsername.textContent = user.username;
   detailFullName.textContent = user.fullName;
@@ -496,23 +517,27 @@ function showUserDetail(user) {
   modal.show();
 }
 
+// Función para obtener los permisos seleccionados en el formulario de creación/edición de usuario, retornando un array con los IDs de los permisos seleccionados
 function getSelectedPermissions() {
   return [...document.querySelectorAll('.permission-checkbox:checked')]
     .map((checkbox) => checkbox.value);
 }
 
+// Función para establecer los permisos seleccionados en el formulario de creación/edición de usuario
 function setSelectedPermissions(permissions) {
   document.querySelectorAll('.permission-checkbox').forEach((checkbox) => {
     checkbox.checked = permissions.includes(checkbox.value);
   });
 }
 
+// Función para limpiar el estado de los checkboxes de permisos al abrir el formulario para crear un nuevo usuario
 function clearPermissionCheckboxes() {
   document.querySelectorAll('.permission-checkbox').forEach((checkbox) => {
     checkbox.checked = false;
   });
 }
 
+// Función para obtener los nombres de los permisos a partir de sus IDs, utilizando el mock de descuentos para mapear los IDs a nombres legibles
 function getPermissionNames(permissionIds) {
   return permissionIds.map((permissionId) => {
     const discount = discountsMock.find((item) => item.id === permissionId);
@@ -520,6 +545,7 @@ function getPermissionNames(permissionIds) {
   });
 }
 
+// Función para obtener el texto legible del rol a partir de su valor, diferenciando entre admin y locatario
 function getRoleText(role) {
   if (role === 'admin') {
     return 'Administrador';
@@ -528,6 +554,7 @@ function getRoleText(role) {
   return 'Locatario';
 }
 
+// Función para obtener el texto legible del estado a partir de su valor, diferenciando entre activo e inactivo
 function getStatusText(status) {
   if (status === 'active') {
     return 'Activo';
@@ -536,15 +563,18 @@ function getStatusText(status) {
   return 'Inactivo';
 }
 
+// Función para obtener el siguiente ID disponible para un nuevo usuario, calculando el máximo ID actual en el mock de usuarios y sumando 1, o retornando 1 si no hay usuarios
 function getNextUserId() {
   return usersMock.length ? Math.max(...usersMock.map((user) => user.id)) + 1 : 1;
 }
 
+// Función para mostrar una alerta con un mensaje específico y un tipo de alerta (success, danger, warning), actualizando el contenido y la clase del elemento de alerta en el DOM
 function showAlert(type, message) {
   usersAlert.className = `alert alert-${type}`;
   usersAlert.textContent = message;
 }
 
+// Función para ocultar la alerta, limpiando su contenido y aplicando la clase de oculto para que no se muestre en la interfaz
 function hideAlert() {
   usersAlert.className = 'alert d-none';
   usersAlert.textContent = '';
