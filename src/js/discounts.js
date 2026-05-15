@@ -1,3 +1,5 @@
+
+// Mock de descuentos para pruebas y desarrollo. En un escenario real, estos datos se obtendrían de una API o base de datos.
 let discountsMock = [
   {
     id: 1,
@@ -61,11 +63,15 @@ let discountsMock = [
   },
 ];
 
+// Referencias a elementos del DOM
+const totalDiscounts = document.getElementById('totalDiscounts');
+const activeDiscounts = document.getElementById('activeDiscounts');
+const amountRequiredDiscounts = document.getElementById('amountRequiredDiscounts');
+const designaMappedDiscounts = document.getElementById('designaMappedDiscounts');
+
 const discountsFilterForm = document.getElementById('discountsFilterForm');
 const clearDiscountFiltersButton = document.getElementById('clearDiscountFiltersButton');
 const openCreateDiscountModalButton = document.getElementById('openCreateDiscountModalButton');
-const discountsTableBody = document.getElementById('discountsTableBody');
-
 const discountSearch = document.getElementById('discountSearch');
 const discountTypeFilter = document.getElementById('discountTypeFilter');
 const discountStatusFilter = document.getElementById('discountStatusFilter');
@@ -73,10 +79,7 @@ const discountStatusFilter = document.getElementById('discountStatusFilter');
 const discountsAlert = document.getElementById('discountsAlert');
 const discountsResultCountBadge = document.getElementById('discountsResultCountBadge');
 
-const totalDiscounts = document.getElementById('totalDiscounts');
-const activeDiscounts = document.getElementById('activeDiscounts');
-const amountRequiredDiscounts = document.getElementById('amountRequiredDiscounts');
-const designaMappedDiscounts = document.getElementById('designaMappedDiscounts');
+const discountsTableBody = document.getElementById('discountsTableBody');
 
 const discountForm = document.getElementById('discountForm');
 const discountFormModalLabel = document.getElementById('discountFormModalLabel');
@@ -101,12 +104,15 @@ const detailRequiresAmount = document.getElementById('detailRequiresAmount');
 const detailRequiresConfirmation = document.getElementById('detailRequiresConfirmation');
 const detailDiscountDescription = document.getElementById('detailDiscountDescription');
 
+// Variable para mantener el estado actual de los resultados filtrados
 let currentResults = [...discountsMock];
 
+// Inicialización de la aplicación
 document.addEventListener('DOMContentLoaded', () => {
   renderDiscounts(discountsMock);
 });
 
+// Espera a que el usuario envíe el formulario de filtros para actualizar la tabla de resultados
 discountsFilterForm?.addEventListener('submit', (event) => {
   event.preventDefault();
 
@@ -120,6 +126,7 @@ discountsFilterForm?.addEventListener('submit', (event) => {
   }
 });
 
+// Permite limpiar los filtros y mostrar todos los resultados nuevamente
 clearDiscountFiltersButton?.addEventListener('click', () => {
   discountsFilterForm.reset();
   currentResults = [...discountsMock];
@@ -127,10 +134,12 @@ clearDiscountFiltersButton?.addEventListener('click', () => {
   hideAlert();
 });
 
+// Abre el modal para crear un nuevo descuento
 openCreateDiscountModalButton?.addEventListener('click', () => {
   openDiscountFormModal();
 });
 
+// Delegación de eventos para acciones dentro de la tabla de descuentos (ver detalle, editar, activar/desactivar)
 discountsTableBody?.addEventListener('click', (event) => {
   const actionButton = event.target.closest('[data-action]');
 
@@ -160,6 +169,7 @@ discountsTableBody?.addEventListener('click', (event) => {
   }
 });
 
+// Maneja el envío del formulario de creación/edición de descuento, validando los datos y actualizando el array de descuentos
 discountForm?.addEventListener('submit', (event) => {
   event.preventDefault();
 
@@ -185,10 +195,12 @@ discountForm?.addEventListener('submit', (event) => {
   modal.hide();
 });
 
+// Actualiza el texto de ayuda para el campo de valor según el tipo de descuento seleccionado
 formDiscountType?.addEventListener('change', () => {
   updateValueHelperByType();
 });
 
+// Funciones para filtrar, renderizar y manejar la lógica de descuentos
 function filterDiscounts() {
   const search = discountSearch.value.trim().toLowerCase();
   const type = discountTypeFilter.value;
@@ -209,6 +221,7 @@ function filterDiscounts() {
   });
 }
 
+// Renderiza la tabla de descuentos según el array proporcionado
 function renderDiscounts(discounts) {
   updateSummary();
   updateResultCount(discounts.length);
@@ -270,6 +283,7 @@ function renderDiscounts(discounts) {
   `).join('');
 }
 
+// Actualiza los contadores de resumen en la parte superior de la página
 function updateSummary() {
   totalDiscounts.textContent = String(discountsMock.length);
   activeDiscounts.textContent = String(discountsMock.filter((discount) => discount.status === 'active').length);
@@ -277,10 +291,12 @@ function updateSummary() {
   designaMappedDiscounts.textContent = String(discountsMock.filter((discount) => Boolean(discount.designaCode)).length);
 }
 
+// Actualiza el contador de resultados mostrados junto a la tabla
 function updateResultCount(count) {
   discountsResultCountBadge.textContent = `${count} descuento${count === 1 ? '' : 's'}`;
 }
 
+// Renderiza un badge de estado con color según el estado del descuento
 function renderStatusBadge(discount) {
   if (discount.status === 'active') {
     return `<span class="badge text-bg-success">${discount.statusText}</span>`;
@@ -289,6 +305,7 @@ function renderStatusBadge(discount) {
   return `<span class="badge text-bg-secondary">${discount.statusText}</span>`;
 }
 
+// Renderiza un badge de tipo con color según el tipo de descuento
 function renderTypeBadge(discount) {
   const badgeClassByType = {
     time: 'text-bg-primary',
@@ -302,6 +319,7 @@ function renderTypeBadge(discount) {
   return `<span class="badge ${className}">${discount.typeText}</span>`;
 }
 
+// Renderiza un badge de "Sí" o "No" para campos booleanos como "Requiere monto" o "Requiere confirmación"
 function renderBooleanBadge(value) {
   if (value) {
     return '<span class="badge text-bg-warning">Sí</span>';
@@ -310,6 +328,7 @@ function renderBooleanBadge(value) {
   return '<span class="badge text-bg-light">No</span>';
 }
 
+// Abre el modal para crear o editar un descuento, y si se proporciona un descuento, llena el formulario con sus datos para edición
 function openDiscountFormModal(discount = null) {
   discountForm.reset();
   discountId.value = '';
@@ -338,6 +357,7 @@ function openDiscountFormModal(discount = null) {
   modal.show();
 }
 
+// Crea un nuevo descuento con los datos del formulario y lo agrega al array de descuentos
 function createDiscount() {
   const newDiscount = {
     id: getNextDiscountId(),
@@ -358,6 +378,7 @@ function createDiscount() {
   discountsMock = [newDiscount, ...discountsMock];
 }
 
+// Actualiza un descuento existente con los datos del formulario y actualiza el array de descuentos
 function updateDiscount(id) {
   discountsMock = discountsMock.map((discount) => {
     if (discount.id !== id) {
@@ -382,6 +403,7 @@ function updateDiscount(id) {
   });
 }
 
+// Cambia el estado de un descuento entre activo e inactivo, actualiza el array de descuentos y muestra una alerta con el resultado
 function toggleDiscountStatus(discount) {
   const newStatus = discount.status === 'active' ? 'inactive' : 'active';
 
@@ -406,6 +428,7 @@ function toggleDiscountStatus(discount) {
   );
 }
 
+// Abre el modal de detalle y llena la información con los datos del descuento seleccionado
 function showDiscountDetail(discount) {
   detailDiscountName.textContent = discount.name;
   detailDiscountCode.textContent = discount.code;
@@ -423,6 +446,7 @@ function showDiscountDetail(discount) {
   modal.show();
 }
 
+// Normaliza un código interno eliminando espacios, convirtiendo a mayúsculas y reemplazando caracteres no permitidos por guiones bajos
 function normalizeInternalCode(value) {
   return value
     .trim()
@@ -431,6 +455,7 @@ function normalizeInternalCode(value) {
     .replace(/[^A-Z0-9_]/g, '');
 }
 
+// Obtiene el texto legible para un tipo de descuento dado su valor interno
 function getTypeText(type) {
   const typeMap = {
     time: 'Tiempo',
@@ -442,6 +467,7 @@ function getTypeText(type) {
   return typeMap[type] || 'No definido';
 }
 
+// Obtiene el texto legible para un estado dado su valor interno
 function getStatusText(status) {
   if (status === 'active') {
     return 'Activo';
@@ -450,6 +476,7 @@ function getStatusText(status) {
   return 'Inactivo';
 }
 
+//
 function formatValue(type, value) {
   if (type === 'time') {
     return `${value} min`;
@@ -469,6 +496,7 @@ function formatValue(type, value) {
   return String(value);
 }
 
+// Actualiza el texto de ayuda debajo del campo de valor según el tipo de descuento seleccionado para guiar al usuario en la entrada correcta de datos
 function updateValueHelperByType() {
   const helper = formDiscountValue?.nextElementSibling;
 
@@ -486,15 +514,18 @@ function updateValueHelperByType() {
   helper.textContent = helperTextByType[formDiscountType.value] || 'Ejemplo: minutos, porcentaje, monto fijo o 100 para cortesía.';
 }
 
+// Obtiene el siguiente ID disponible para un nuevo descuento basado en el array actual de descuentos
 function getNextDiscountId() {
   return discountsMock.length ? Math.max(...discountsMock.map((discount) => discount.id)) + 1 : 1;
 }
 
+// Muestra una alerta en la parte superior de la tabla de resultados con el mensaje y tipo especificados (success, warning, danger)
 function showAlert(type, message) {
   discountsAlert.className = `alert alert-${type}`;
   discountsAlert.textContent = message;
 }
 
+// Oculta la alerta y limpia su contenido
 function hideAlert() {
   discountsAlert.className = 'alert d-none';
   discountsAlert.textContent = '';

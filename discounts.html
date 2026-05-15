@@ -8,6 +8,7 @@
 </head>
 <body>
   <div class="app-layout">
+    <!-- Sidebar de navegación -->
     <aside class="app-sidebar">
       <div class="app-sidebar-brand">
         <i class="bi bi-ticket-perforated me-2"></i>
@@ -47,7 +48,9 @@
       </nav>
     </aside>
 
+    <!-- Contenido principal -->
     <main class="app-main">
+        <!-- Barra de navegación superior -->
       <header class="app-navbar">
         <div>
           <h1 class="h5 mb-0">Descuentos</h1>
@@ -68,8 +71,8 @@
           </ul>
         </div>
       </header>
-
       <section class="app-content">
+        <!-- Estadísticas rápidas -->
         <div class="row g-3 mb-3">
           <div class="col-12 col-md-6 col-xl-3">
             <div class="app-card app-stat-card">
@@ -117,7 +120,7 @@
             <div class="app-card app-stat-card">
               <div class="d-flex justify-content-between align-items-center">
                 <div>
-                  <p class="text-muted mb-1">Con código Designa</p>
+                  <p class="text-muted mb-1">Con ID asignado</p>
                   <h2 id="designaMappedDiscounts" class="h4 mb-0">0</h2>
                 </div>
                 <div class="app-stat-icon">
@@ -128,6 +131,7 @@
           </div>
         </div>
 
+        <!-- Filtros de búsqueda -->
         <div class="app-card p-3 p-md-4 mb-3">
           <div class="d-flex flex-column flex-lg-row justify-content-between gap-3 mb-3">
             <div>
@@ -189,8 +193,10 @@
           </form>
         </div>
 
+        <!-- Alertas -->
         <div id="discountsAlert" class="alert d-none" role="alert"></div>
 
+        <!-- Tabla de resultados -->
         <div class="app-card p-3 p-md-4">
           <div class="d-flex flex-column flex-lg-row justify-content-between gap-3 mb-3">
             <div>
