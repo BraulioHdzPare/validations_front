@@ -1,0 +1,414 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Descuentos | Portal de Validaciones</title>
+</head>
+<body>
+  <div class="app-layout">
+    <aside class="app-sidebar">
+      <div class="app-sidebar-brand">
+        <i class="bi bi-ticket-perforated me-2"></i>
+        Portal Validaciones
+      </div>
+
+      <nav class="app-sidebar-nav">
+        <a href="index.html" class="app-sidebar-link">
+          <i class="bi bi-speedometer2"></i>
+          Dashboard
+        </a>
+
+        <a href="validation-ticket.html" class="app-sidebar-link">
+          <i class="bi bi-upc-scan"></i>
+          Validar boleto
+        </a>
+
+        <a href="reports.html" class="app-sidebar-link">
+          <i class="bi bi-table"></i>
+          Reportes
+        </a>
+
+        <a href="users.html" class="app-sidebar-link">
+          <i class="bi bi-people"></i>
+          Usuarios
+        </a>
+
+        <a href="tenants.html" class="app-sidebar-link">
+          <i class="bi bi-shop"></i>
+          Locatarios
+        </a>
+
+        <a href="discounts.html" class="app-sidebar-link active">
+          <i class="bi bi-percent"></i>
+          Descuentos
+        </a>
+      </nav>
+    </aside>
+
+    <main class="app-main">
+      <header class="app-navbar">
+        <div>
+          <h1 class="h5 mb-0">Descuentos</h1>
+          <small class="text-muted">Catálogo de validaciones disponibles</small>
+        </div>
+
+        <div class="dropdown">
+          <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+            <i class="bi bi-person-circle me-1"></i>
+            Administrador
+          </button>
+
+          <ul class="dropdown-menu dropdown-menu-end">
+            <li><a class="dropdown-item" href="#">Mi perfil</a></li>
+            <li><a class="dropdown-item" href="#">Cambiar contraseña</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item text-danger" href="#">Cerrar sesión</a></li>
+          </ul>
+        </div>
+      </header>
+
+      <section class="app-content">
+        <div class="row g-3 mb-3">
+          <div class="col-12 col-md-6 col-xl-3">
+            <div class="app-card app-stat-card">
+              <div class="d-flex justify-content-between align-items-center">
+                <div>
+                  <p class="text-muted mb-1">Descuentos totales</p>
+                  <h2 id="totalDiscounts" class="h4 mb-0">0</h2>
+                </div>
+                <div class="app-stat-icon">
+                  <i class="bi bi-percent"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12 col-md-6 col-xl-3">
+            <div class="app-card app-stat-card">
+              <div class="d-flex justify-content-between align-items-center">
+                <div>
+                  <p class="text-muted mb-1">Activos</p>
+                  <h2 id="activeDiscounts" class="h4 mb-0">0</h2>
+                </div>
+                <div class="app-stat-icon">
+                  <i class="bi bi-check2-circle"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12 col-md-6 col-xl-3">
+            <div class="app-card app-stat-card">
+              <div class="d-flex justify-content-between align-items-center">
+                <div>
+                  <p class="text-muted mb-1">Requieren monto</p>
+                  <h2 id="amountRequiredDiscounts" class="h4 mb-0">0</h2>
+                </div>
+                <div class="app-stat-icon">
+                  <i class="bi bi-cash-coin"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12 col-md-6 col-xl-3">
+            <div class="app-card app-stat-card">
+              <div class="d-flex justify-content-between align-items-center">
+                <div>
+                  <p class="text-muted mb-1">Con código Designa</p>
+                  <h2 id="designaMappedDiscounts" class="h4 mb-0">0</h2>
+                </div>
+                <div class="app-stat-icon">
+                  <i class="bi bi-link-45deg"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="app-card p-3 p-md-4 mb-3">
+          <div class="d-flex flex-column flex-lg-row justify-content-between gap-3 mb-3">
+            <div>
+              <h2 class="h5 mb-1">Filtros de búsqueda</h2>
+              <small class="text-muted">Busca descuentos por nombre, código, tipo o estado.</small>
+            </div>
+
+            <div class="d-flex gap-2">
+              <button id="clearDiscountFiltersButton" type="button" class="btn btn-outline-secondary">
+                <i class="bi bi-eraser me-1"></i>
+                Limpiar
+              </button>
+
+              <button id="openCreateDiscountModalButton" type="button" class="btn btn-primary">
+                <i class="bi bi-plus-circle me-1"></i>
+                Nuevo descuento
+              </button>
+            </div>
+          </div>
+
+          <form id="discountsFilterForm" class="row g-3">
+            <div class="col-12 col-md-6 col-xl-5">
+              <label for="discountSearch" class="form-label">Buscar descuento</label>
+              <input
+                type="text"
+                id="discountSearch"
+                class="form-control"
+                placeholder="Nombre, código o descripción"
+                autocomplete="off"
+              >
+            </div>
+
+            <div class="col-12 col-md-6 col-xl-3">
+              <label for="discountTypeFilter" class="form-label">Tipo</label>
+              <select id="discountTypeFilter" class="form-select">
+                <option value="">Todos</option>
+                <option value="time">Tiempo</option>
+                <option value="percentage">Porcentaje</option>
+                <option value="fixed_rate">Tarifa fija</option>
+                <option value="courtesy">Cortesía</option>
+              </select>
+            </div>
+
+            <div class="col-12 col-md-6 col-xl-2">
+              <label for="discountStatusFilter" class="form-label">Estado</label>
+              <select id="discountStatusFilter" class="form-select">
+                <option value="">Todos</option>
+                <option value="active">Activo</option>
+                <option value="inactive">Inactivo</option>
+              </select>
+            </div>
+
+            <div class="col-12 col-md-6 col-xl-2 d-flex align-items-end">
+              <button type="submit" class="btn btn-primary w-100">
+                <i class="bi bi-search me-1"></i>
+                Filtrar
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <div id="discountsAlert" class="alert d-none" role="alert"></div>
+
+        <div class="app-card p-3 p-md-4">
+          <div class="d-flex flex-column flex-lg-row justify-content-between gap-3 mb-3">
+            <div>
+              <h2 class="h5 mb-1">Listado de descuentos</h2>
+              <small class="text-muted">Validaciones configurables para operación del portal.</small>
+            </div>
+
+            <span id="discountsResultCountBadge" class="badge text-bg-light align-self-start">
+              0 descuentos
+            </span>
+          </div>
+
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead>
+                <tr>
+                  <th>Nombre</th>
+                  <th>Código interno</th>
+                  <th>Código Designa</th>
+                  <th>Tipo</th>
+                  <th>Valor</th>
+                  <th>Requiere monto</th>
+                  <th>Estado</th>
+                  <th class="text-end">Acciones</th>
+                </tr>
+              </thead>
+
+              <tbody id="discountsTableBody">
+                <tr>
+                  <td colspan="8" class="text-center text-muted py-4">
+                    Cargando descuentos...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Modal crear / editar descuento -->
+  <div class="modal fade" id="discountFormModal" tabindex="-1" aria-labelledby="discountFormModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <form id="discountForm" class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title h5" id="discountFormModalLabel">Nuevo descuento</h2>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+
+        <div class="modal-body">
+          <input type="hidden" id="discountId">
+
+          <div class="row g-3">
+            <div class="col-12 col-md-6">
+              <label for="formDiscountName" class="form-label">Nombre del descuento</label>
+              <input type="text" id="formDiscountName" class="form-control" required>
+            </div>
+
+            <div class="col-12 col-md-6">
+              <label for="formDiscountCode" class="form-label">Código interno</label>
+              <input type="text" id="formDiscountCode" class="form-control" placeholder="Ej. TWO_HOURS_FREE" required>
+            </div>
+
+            <div class="col-12 col-md-6">
+              <label for="formDesignaCode" class="form-label">Código Designa</label>
+              <input type="text" id="formDesignaCode" class="form-control" placeholder="Ej. DSG-VAL-001">
+              <div class="form-text">
+                Se usará cuando exista integración real con la API de Designa.
+              </div>
+            </div>
+
+            <div class="col-12 col-md-6">
+              <label for="formDiscountType" class="form-label">Tipo de descuento</label>
+              <select id="formDiscountType" class="form-select" required>
+                <option value="">Selecciona un tipo</option>
+                <option value="time">Tiempo</option>
+                <option value="percentage">Porcentaje</option>
+                <option value="fixed_rate">Tarifa fija</option>
+                <option value="courtesy">Cortesía</option>
+              </select>
+            </div>
+
+            <div class="col-12 col-md-6">
+              <label for="formDiscountValue" class="form-label">Valor</label>
+              <input type="number" id="formDiscountValue" class="form-control" min="0" step="0.01" required>
+              <div class="form-text">
+                Ejemplo: minutos, porcentaje, monto fijo o 100 para cortesía.
+              </div>
+            </div>
+
+            <div class="col-12 col-md-6">
+              <label for="formDiscountStatus" class="form-label">Estado</label>
+              <select id="formDiscountStatus" class="form-select" required>
+                <option value="active">Activo</option>
+                <option value="inactive">Inactivo</option>
+              </select>
+            </div>
+
+            <div class="col-12 col-md-6">
+              <div class="form-check form-switch mt-4">
+                <input class="form-check-input" type="checkbox" role="switch" id="formRequiresAmount">
+                <label class="form-check-label" for="formRequiresAmount">
+                  Requiere monto manual
+                </label>
+              </div>
+              <div class="form-text">
+                Útil para validaciones donde el operador debe capturar un monto o valor.
+              </div>
+            </div>
+
+            <div class="col-12 col-md-6">
+              <div class="form-check form-switch mt-4">
+                <input class="form-check-input" type="checkbox" role="switch" id="formRequiresConfirmation" checked>
+                <label class="form-check-label" for="formRequiresConfirmation">
+                  Requiere confirmación
+                </label>
+              </div>
+              <div class="form-text">
+                Recomendado para evitar aplicaciones accidentales.
+              </div>
+            </div>
+
+            <div class="col-12">
+              <label for="formDiscountDescription" class="form-label">Descripción</label>
+              <textarea
+                id="formDiscountDescription"
+                class="form-control"
+                rows="3"
+                placeholder="Describe el uso operativo de esta validación"
+              ></textarea>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+            Cancelar
+          </button>
+
+          <button type="submit" class="btn btn-primary">
+            Guardar descuento
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal detalle de descuento -->
+  <div class="modal fade" id="discountDetailModal" tabindex="-1" aria-labelledby="discountDetailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title h5" id="discountDetailModalLabel">Detalle de descuento</h2>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-12 col-md-6">
+              <small class="text-muted d-block">Nombre</small>
+              <strong id="detailDiscountName">-</strong>
+            </div>
+
+            <div class="col-12 col-md-6">
+              <small class="text-muted d-block">Estado</small>
+              <span id="detailDiscountStatus" class="badge">-</span>
+            </div>
+
+            <div class="col-12 col-md-6">
+              <small class="text-muted d-block">Código interno</small>
+              <strong id="detailDiscountCode">-</strong>
+            </div>
+
+            <div class="col-12 col-md-6">
+              <small class="text-muted d-block">Código Designa</small>
+              <strong id="detailDesignaCode">-</strong>
+            </div>
+
+            <div class="col-12 col-md-4">
+              <small class="text-muted d-block">Tipo</small>
+              <strong id="detailDiscountType">-</strong>
+            </div>
+
+            <div class="col-12 col-md-4">
+              <small class="text-muted d-block">Valor</small>
+              <strong id="detailDiscountValue">-</strong>
+            </div>
+
+            <div class="col-12 col-md-4">
+              <small class="text-muted d-block">Requiere monto</small>
+              <strong id="detailRequiresAmount">-</strong>
+            </div>
+
+            <div class="col-12 col-md-4">
+              <small class="text-muted d-block">Requiere confirmación</small>
+              <strong id="detailRequiresConfirmation">-</strong>
+            </div>
+
+            <div class="col-12">
+              <small class="text-muted d-block">Descripción</small>
+              <div id="detailDiscountDescription" class="border rounded-3 p-3 bg-light mt-1">
+                -
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+            Cerrar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/src/js/app.js"></script>
+  <script type="module" src="/src/js/discounts.js"></script>
+</body>
+</html>
