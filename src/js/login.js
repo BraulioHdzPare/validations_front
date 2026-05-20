@@ -1,16 +1,30 @@
+import { getSession } from './auth.js';
+
+// Si ya existe una sesión activa (ej. localStorage con "recordar sesión"),
+// redirigir directamente sin mostrar el formulario.
+const existingSession = getSession();
+
+if (existingSession) {
+  window.location.replace(existingSession.role === 'admin' ? 'dashboard.html' : 'validation-ticket.html');
+}
+
 const demoUsers = [
   {
     username: 'admin',
     password: 'admin123',
     role: 'admin',
-    displayName: 'Administrador',
+    displayName: 'Administrador General',
+    tenant: '',
+    permissions: ['two_hours_free', 'fifty_percent', 'preferred_rate', 'full_courtesy'],
     redirectTo: 'dashboard.html',
   },
   {
     username: 'usuario.cine01',
     password: 'demo123',
     role: 'tenant_user',
-    displayName: 'Usuario Cine',
+    displayName: 'Usuario Cine 01',
+    tenant: 'Cine',
+    permissions: ['two_hours_free'],
     redirectTo: 'validation-ticket.html',
   },
 ];
@@ -89,6 +103,8 @@ function saveSession(user) {
     username: user.username,
     role: user.role,
     displayName: user.displayName,
+    tenant: user.tenant,
+    permissions: user.permissions,
     loggedAt: new Date().toISOString(),
   }));
 }
