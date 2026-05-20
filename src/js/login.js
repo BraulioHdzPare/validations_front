@@ -4,7 +4,7 @@ const demoUsers = [
     password: 'admin123',
     role: 'admin',
     displayName: 'Administrador',
-    redirectTo: 'index.html',
+    redirectTo: 'dashboard.html',
   },
   {
     username: 'usuario.cine01',

@@ -8,6 +8,8 @@
 </head>
 <body>
   <div class="app-layout">
+
+    <!-- Sidebar lateral -->
     <aside class="app-sidebar">
       <div class="app-sidebar-brand">
         <i class="bi bi-ticket-perforated me-2"></i>
@@ -15,7 +17,7 @@
       </div>
 
       <nav class="app-sidebar-nav">
-        <a href="index.html" class="app-sidebar-link">
+        <a href="dashboard.html" class="app-sidebar-link">
           <i class="bi bi-speedometer2"></i>
           Dashboard
         </a>
@@ -47,7 +49,9 @@
       </nav>
     </aside>
 
+    <!-- Contenido principal -->
     <main class="app-main">
+      <!-- Navbar superior -->
       <header class="app-navbar">
         <div>
           <h1 class="h5 mb-0">Locatarios</h1>
@@ -64,12 +68,13 @@
             <li><a class="dropdown-item" href="#">Mi perfil</a></li>
             <li><a class="dropdown-item" href="#">Cambiar contraseña</a></li>
             <li><hr class="dropdown-divider"></li>
-            <li><a class="dropdown-item text-danger" href="#">Cerrar sesión</a></li>
+            <li><a class="dropdown-item text-danger" href="login.html">Cerrar sesión</a></li>
           </ul>
         </div>
       </header>
-
+      
       <section class="app-content">
+        <!-- Estadísticas rápidas -->
         <div class="row g-3 mb-3">
           <div class="col-12 col-md-6 col-xl-3">
             <div class="app-card app-stat-card">
@@ -129,6 +134,7 @@
         </div>
 
         <div class="app-card p-3 p-md-4 mb-3">
+          <!-- Filtros de búsqueda -->
           <div class="d-flex flex-column flex-lg-row justify-content-between gap-3 mb-3">
             <div>
               <h2 class="h5 mb-1">Filtros de búsqueda</h2>
@@ -148,6 +154,7 @@
             </div>
           </div>
 
+          <!-- Formulario de filtros -->
           <form id="tenantsFilterForm" class="row g-3">
             <div class="col-12 col-md-6 col-xl-6">
               <label for="tenantSearch" class="form-label">Buscar locatario</label>
@@ -178,8 +185,10 @@
           </form>
         </div>
 
+        <!-- Alertas y mensajes -->
         <div id="tenantsAlert" class="alert d-none" role="alert"></div>
 
+        <!-- Tabla de locatarios -->
         <div class="app-card p-3 p-md-4">
           <div class="d-flex flex-column flex-lg-row justify-content-between gap-3 mb-3">
             <div>
