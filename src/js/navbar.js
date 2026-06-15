@@ -1,4 +1,5 @@
-import { requireAuth, clearSession, isAdmin } from './auth.js';
+import { requireAuth, clearSession, isAdmin, getRefreshToken } from './auth.js';
+import { apiClient } from './api-client.js';
 
 // Páginas a las que solo puede acceder el administrador.
 // Si un locatario intenta acceder directamente por URL, se le redirige al dashboard.
@@ -53,8 +54,17 @@ function applyRouteGuard(user) {
 // limpia el storage y redirige al login.
 function bindLogout() {
   document.querySelectorAll('[data-action="logout"]').forEach((el) => {
-    el.addEventListener('click', (event) => {
+    el.addEventListener('click', async (event) => {
       event.preventDefault();
+      const refresh = getRefreshToken();
+      // Intentamos invalidar el token en el servidor; si falla, continuamos igual
+      if (refresh) {
+        try {
+          await apiClient.post('/api/auth/logout/', { refresh });
+        } catch {
+          // silencioso — el token quedará activo hasta expirar (30 min)
+        }
+      }
       clearSession();
       window.location.href = 'login.html';
     });

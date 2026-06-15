@@ -1,34 +1,13 @@
-import { getSession } from './auth.js';
+import { getSession, saveSession } from './auth.js';
+import { apiClient } from './api-client.js';
 
-// Si ya existe una sesión activa (ej. localStorage con "recordar sesión"),
-// redirigir directamente sin mostrar el formulario.
+// Si ya hay sesión activa (recordar sesión), redirigir directamente.
 const existingSession = getSession();
-
 if (existingSession) {
   window.location.replace(existingSession.role === 'admin' ? 'dashboard.html' : 'validation-ticket.html');
 }
 
-const demoUsers = [
-  {
-    username: 'admin',
-    password: 'admin123',
-    role: 'admin',
-    displayName: 'Administrador General',
-    tenant: '',
-    permissions: ['two_hours_free', 'fifty_percent', 'preferred_rate', 'full_courtesy'],
-    redirectTo: 'dashboard.html',
-  },
-  {
-    username: 'usuario.cine01',
-    password: 'demo123',
-    role: 'tenant_user',
-    displayName: 'Usuario Cine 01',
-    tenant: 'Cine',
-    permissions: ['two_hours_free'],
-    redirectTo: 'validation-ticket.html',
-  },
-];
-
+// Lógica del formulario de login
 const loginForm = document.getElementById('loginForm');
 const usernameInput = document.getElementById('username');
 const passwordInput = document.getElementById('password');
@@ -40,6 +19,7 @@ const togglePasswordIcon = document.getElementById('togglePasswordIcon');
 
 usernameInput?.focus();
 
+// Lógica de envío del formulario
 loginForm?.addEventListener('submit', async (event) => {
   event.preventDefault();
 
@@ -57,21 +37,18 @@ loginForm?.addEventListener('submit', async (event) => {
   setLoadingState(true);
 
   try {
-    const user = await authenticateUser(username, password);
+    const response = await apiClient.post('/api/auth/login/', { username, password });
 
-    if (!user) {
-      showAlert('danger', 'Usuario o contraseña incorrectos.');
-      return;
-    }
+    const remember = rememberSessionInput?.checked ?? false; // Si el checkbox no existe, no recordar sesión
+    saveSession({ access: response.access, refresh: response.refresh }, response.user, remember);
 
-    saveSession(user);
     showAlert('success', 'Acceso correcto. Redirigiendo...');
-
+    
     setTimeout(() => {
-      window.location.href = user.redirectTo;
+      window.location.href = response.user.role === 'admin' ? 'dashboard.html' : 'validation-ticket.html';
     }, 500);
   } catch (error) {
-    showAlert('danger', 'No fue posible iniciar sesión. Intenta nuevamente.');
+    showAlert('danger', error.message || 'No fue posible iniciar sesión. Intenta nuevamente.');
   } finally {
     setLoadingState(false);
   }
@@ -79,44 +56,13 @@ loginForm?.addEventListener('submit', async (event) => {
 
 togglePasswordButton?.addEventListener('click', () => {
   const isPassword = passwordInput.type === 'password';
-
   passwordInput.type = isPassword ? 'text' : 'password';
   togglePasswordIcon.className = isPassword ? 'bi bi-eye-slash' : 'bi bi-eye';
 });
 
-function authenticateUser(username, password) {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const user = demoUsers.find((item) =>
-        item.username === username && item.password === password
-      );
-
-      resolve(user || null);
-    }, 350);
-  });
-}
-
-function saveSession(user) {
-  const storage = rememberSessionInput.checked ? localStorage : sessionStorage;
-
-  storage.setItem('portalUser', JSON.stringify({
-    username: user.username,
-    role: user.role,
-    displayName: user.displayName,
-    tenant: user.tenant,
-    permissions: user.permissions,
-    loggedAt: new Date().toISOString(),
-  }));
-}
-
 function validateRequiredInputs() {
-  if (!usernameInput.value.trim()) {
-    usernameInput.classList.add('is-invalid');
-  }
-
-  if (!passwordInput.value.trim()) {
-    passwordInput.classList.add('is-invalid');
-  }
+  if (!usernameInput.value.trim()) usernameInput.classList.add('is-invalid');
+  if (!passwordInput.value.trim()) passwordInput.classList.add('is-invalid');
 }
 
 function clearValidationState() {
@@ -127,7 +73,6 @@ function clearValidationState() {
 
 function setLoadingState(isLoading) {
   loginButton.disabled = isLoading;
-
   loginButton.innerHTML = isLoading
     ? '<span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>Validando...'
     : '<i class="bi bi-box-arrow-in-right me-1"></i>Iniciar sesión';

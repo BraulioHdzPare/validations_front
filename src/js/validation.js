@@ -1,4 +1,4 @@
-import { searchTicket, applyValidation } from './mock-api.js';
+import { searchTicket, applyValidation } from './parking-api.js';
 import { getSession, isAdmin } from './auth.js';
 
 const ticketSearchForm = document.getElementById('ticketSearchForm');
