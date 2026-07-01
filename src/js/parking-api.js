@@ -1,3 +1,8 @@
+/** Este modulo se encarga de interactuar con la API de estacionamiento
+ * para buscar boletos y aplicar validaciones. Mantiene la misma firma que mock-api.js
+ * para que validation.js no tenga que cambiar al pasar de mock a real API.
+ */
+
 import { apiClient } from './api-client.js';
 import { getSession } from './auth.js';
 
@@ -54,7 +59,6 @@ export async function searchTicket(ticketNumber) {
  */
 export async function applyValidation(ticketNumber, discountId) {
   const session = getSession();
-  console.log('Sesión actual:', session);
   const parkingSiteId = session?.parkingSiteId ?? null;
 
   if (!parkingSiteId) {
@@ -64,7 +68,7 @@ export async function applyValidation(ticketNumber, discountId) {
 
   const data = await apiClient.post('/api/validations/apply/', {
     ticket_number: ticketNumber,
-    validation_type_id: Number(discountId),
+    validation_code: discountId,
     parking_site_id: parkingSiteId,
   });
 
