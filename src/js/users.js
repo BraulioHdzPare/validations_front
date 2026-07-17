@@ -1,81 +1,20 @@
-// Mock de datos para locatarios y descuentos
-const tenantsMock = [
-  'Cine',
-  'Gimnasio',
-  'Restaurante',
-  'Empresa X',
-];
+import {
+  listUsers,
+  createUser,
+  updateUser,
+  deactivateUser,
+  reactivateUser,
+  setUserPassword,
+} from './users-api.js';
+import { listTenants, listParkingSites } from './lookups-api.js';
 
-const discountsMock = [
-  {
-    id: 'two_hours_free',
-    name: '2 horas gratis',
-  },
-  {
-    id: 'fifty_percent',
-    name: '50% descuento',
-  },
-  {
-    id: 'preferred_rate',
-    name: 'Tarifa preferente',
-  },
-  {
-    id: 'full_courtesy',
-    name: 'Cortesía total',
-  },
-];
-
-// Mock de datos para usuarios
-let usersMock = [
-  {
-    id: 1,
-    username: 'admin',
-    fullName: 'Administrador General',
-    email: 'admin@pare.com.mx',
-    role: 'admin',
-    roleText: 'Administrador',
-    tenant: '',
-    status: 'active',
-    statusText: 'Activo',
-    permissions: ['two_hours_free', 'fifty_percent', 'preferred_rate', 'full_courtesy'],
-  },
-  {
-    id: 2,
-    username: 'usuario.cine01',
-    fullName: 'Usuario Cine 01',
-    email: 'cine01@locatario.com',
-    role: 'tenant_user',
-    roleText: 'Locatario',
-    tenant: 'Cine',
-    status: 'active',
-    statusText: 'Activo',
-    permissions: ['two_hours_free'],
-  },
-  {
-    id: 3,
-    username: 'usuario.gym01',
-    fullName: 'Usuario Gimnasio 01',
-    email: 'gym01@locatario.com',
-    role: 'tenant_user',
-    roleText: 'Locatario',
-    tenant: 'Gimnasio',
-    status: 'active',
-    statusText: 'Activo',
-    permissions: ['fifty_percent', 'preferred_rate'],
-  },
-  {
-    id: 4,
-    username: 'usuario.rest01',
-    fullName: 'Usuario Restaurante 01',
-    email: 'rest01@locatario.com',
-    role: 'tenant_user',
-    roleText: 'Locatario',
-    tenant: 'Restaurante',
-    status: 'inactive',
-    statusText: 'Inactivo',
-    permissions: ['preferred_rate'],
-  },
-];
+// Estado en memoria, cargado desde el backend
+let allUsers = [];
+let tenants = []; // [{ id, name }]
+let parkingSites = []; // [{ id, name }]
+let tenantNameById = new Map();
+let parkingSiteNameById = new Map();
+let currentResults = [];
 
 // Elementos del DOM
 const totalUsers = document.getElementById('totalUsers');
@@ -100,12 +39,15 @@ const userForm = document.getElementById('userForm');
 const userFormModalLabel = document.getElementById('userFormModalLabel');
 const userId = document.getElementById('userId');
 const formUsername = document.getElementById('formUsername');
-const formFullName = document.getElementById('formFullName');
+const formFirstName = document.getElementById('formFirstName');
+const formLastName = document.getElementById('formLastName');
 const formEmail = document.getElementById('formEmail');
 const formRole = document.getElementById('formRole');
 const formTenant = document.getElementById('formTenant');
+const formParkingSite = document.getElementById('formParkingSite');
 const formStatus = document.getElementById('formStatus');
-const discountPermissionsContainer = document.getElementById('discountPermissionsContainer');
+const formPassword = document.getElementById('formPassword');
+const passwordHelp = document.getElementById('passwordHelp');
 
 const detailUsername = document.getElementById('detailUsername');
 const detailFullName = document.getElementById('detailFullName');
@@ -113,19 +55,31 @@ const detailEmail = document.getElementById('detailEmail');
 const detailRole = document.getElementById('detailRole');
 const detailStatus = document.getElementById('detailStatus');
 const detailTenant = document.getElementById('detailTenant');
-const detailPermissions = document.getElementById('detailPermissions');
-
-let currentResults = [...usersMock];
+const detailParkingSite = document.getElementById('detailParkingSite');
 
 // Inicialización
 document.addEventListener('DOMContentLoaded', () => {
-  loadFilterOptions();
-  loadFormOptions();
-  renderPermissionCheckboxes();
-  renderUsers(usersMock);
+  initialize();
 });
 
-// Actualización de resultados al aplicar filtros
+async function initialize() {
+  try {
+    [tenants, parkingSites] = await Promise.all([listTenants(), listParkingSites()]);
+    tenantNameById = new Map(tenants.map((t) => [t.id, t.name]));
+    parkingSiteNameById = new Map(parkingSites.map((p) => [p.id, p.name]));
+
+    loadFilterOptions();
+    loadFormOptions();
+
+    allUsers = await listUsers();
+    currentResults = [...allUsers];
+    renderUsers(currentResults);
+  } catch (error) {
+    showAlert('danger', `No se pudieron cargar los usuarios: ${error.message}`);
+  }
+}
+
+// Filtros
 usersFilterForm?.addEventListener('submit', (event) => {
   event.preventDefault();
 
@@ -139,20 +93,18 @@ usersFilterForm?.addEventListener('submit', (event) => {
   }
 });
 
-// Limpieza de filtros y resultados
 clearUserFiltersButton?.addEventListener('click', () => {
   usersFilterForm.reset();
-  currentResults = [...usersMock];
+  currentResults = [...allUsers];
   renderUsers(currentResults);
   hideAlert();
 });
 
-// Apertura del modal para crear nuevo usuario
 openCreateUserModalButton?.addEventListener('click', () => {
   openUserFormModal();
 });
 
-// Manejo de acciones en la tabla de usuarios
+// Acciones en la tabla
 usersTableBody?.addEventListener('click', (event) => {
   const actionButton = event.target.closest('[data-action]');
 
@@ -162,7 +114,7 @@ usersTableBody?.addEventListener('click', (event) => {
 
   const action = actionButton.dataset.action;
   const id = Number(actionButton.dataset.id);
-  const user = usersMock.find((item) => item.id === id);
+  const user = allUsers.find((item) => item.id === id);
 
   if (!user) {
     showAlert('danger', 'No se encontró el usuario seleccionado.');
@@ -186,98 +138,103 @@ usersTableBody?.addEventListener('click', (event) => {
   }
 });
 
-// Manejo del formulario de creación/edición de usuario
-userForm?.addEventListener('submit', (event) => {
+// Ocultar/limpiar los campos que solo aplican a locatarios cuando el rol es admin
+formRole?.addEventListener('change', () => {
+  applyRoleFieldRules();
+});
+
+// Alta / edición
+userForm?.addEventListener('submit', async (event) => {
   event.preventDefault();
 
-  const selectedPermissions = getSelectedPermissions();
+  const isEditing = Boolean(userId.value);
+  const password = formPassword.value.trim();
 
   if (formRole.value === 'tenant_user' && !formTenant.value) {
     showAlert('danger', 'Los usuarios locatarios deben tener un locatario asignado.');
     return;
   }
 
-  if (selectedPermissions.length === 0) {
-    showAlert('danger', 'Selecciona al menos una validación permitida.');
+  if (formRole.value === 'tenant_user' && !formParkingSite.value) {
+    showAlert('danger', 'Los usuarios locatarios deben tener una unidad asignada para poder validar boletos.');
     return;
   }
 
-  const id = userId.value ? Number(userId.value) : null;
-
-  if (id) {
-    updateUser(id, selectedPermissions);
-    showAlert('success', 'Usuario actualizado correctamente.');
-  } else {
-    createUser(selectedPermissions);
-    showAlert('success', 'Usuario creado correctamente.');
+  if (!isEditing && !password) {
+    showAlert('danger', 'La contraseña es obligatoria al crear un usuario.');
+    return;
   }
 
-  currentResults = [...usersMock];
-  renderUsers(currentResults);
+  const uiUser = {
+    username: formUsername.value.trim(),
+    firstName: formFirstName.value.trim(),
+    lastName: formLastName.value.trim(),
+    email: formEmail.value.trim(),
+    role: formRole.value,
+    tenantId: formRole.value === 'admin' ? null : Number(formTenant.value) || null,
+    parkingSiteId: formRole.value === 'admin' ? null : Number(formParkingSite.value) || null,
+    status: formStatus.value,
+    password,
+  };
 
-  const modal = window.bootstrap.Modal.getOrCreateInstance(document.getElementById('userFormModal'));
-  modal.hide();
-});
+  try {
+    if (isEditing) {
+      await updateUser(Number(userId.value), uiUser);
+    } else {
+      await createUser(uiUser);
+    }
 
-// Deshabilitar campo de locatario si el rol es admin
-formRole?.addEventListener('change', () => {
-  if (formRole.value === 'admin') {
-    formTenant.value = '';
+    allUsers = await listUsers();
+    currentResults = filterUsers();
+    renderUsers(currentResults);
+
+    showAlert('success', isEditing ? 'Usuario actualizado correctamente.' : 'Usuario creado correctamente.');
+
+    window.bootstrap.Modal.getOrCreateInstance(document.getElementById('userFormModal')).hide();
+  } catch (error) {
+    showAlert('danger', error.message);
   }
 });
 
-// Cargar opciones de filtros y formulario
+// Poblar selectores
 function loadFilterOptions() {
-  renderSelectOptions(tenantFilter, tenantsMock);
+  renderSelectOptions(tenantFilter, tenants, { keepFirst: true });
 }
 
-// Cargar opciones de locatarios en el formulario
 function loadFormOptions() {
-  renderSelectOptions(formTenant, tenantsMock);
+  renderSelectOptions(formTenant, tenants, { keepFirst: true });
+  renderSelectOptions(formParkingSite, parkingSites, { keepFirst: true });
 }
 
-// Función para renderizar opciones en un elemento select
-function renderSelectOptions(selectElement, values) {
-  const fragment = document.createDocumentFragment();
+function renderSelectOptions(selectElement, items, { keepFirst = false } = {}) {
+  if (!selectElement) {
+    return;
+  }
 
-  values.forEach((value) => {
+  // Conserva la primera opción (placeholder "Todos"/"Sin ...") si se pide.
+  const placeholder = keepFirst ? selectElement.querySelector('option') : null;
+  selectElement.innerHTML = '';
+  if (placeholder) {
+    selectElement.appendChild(placeholder);
+  }
+
+  const fragment = document.createDocumentFragment();
+  items.forEach((item) => {
     const option = document.createElement('option');
-    option.value = value;
-    option.textContent = value;
+    option.value = String(item.id);
+    option.textContent = item.name;
     fragment.appendChild(option);
   });
-
-  // Una sola inserción al DOM real
   selectElement.appendChild(fragment);
 }
 
-// Renderizar checkboxes de permisos basados en los descuentos
-function renderPermissionCheckboxes() {
-  discountPermissionsContainer.innerHTML = discountsMock.map((discount) => `
-    <div class="col-12 col-md-6">
-      <div class="form-check border rounded-3 p-3 ps-5 bg-light">
-        <input
-          class="form-check-input permission-checkbox"
-          type="checkbox"
-          value="${discount.id}"
-          id="permission-${discount.id}"
-        >
-        <label class="form-check-label" for="permission-${discount.id}">
-          ${discount.name}
-        </label>
-      </div>
-    </div>
-  `).join('');
-}
-
-// Función para retornar usuarios filtrados según criterios de búsqueda y filtros aplicados
 function filterUsers() {
   const search = userSearch.value.trim().toLowerCase();
   const role = roleFilter.value;
-  const tenant = tenantFilter.value;
+  const tenantIdValue = tenantFilter.value;
   const status = statusFilter.value;
 
-  return usersMock.filter((user) => {
+  return allUsers.filter((user) => {
     const matchesSearch =
       !search ||
       user.username.toLowerCase().includes(search) ||
@@ -285,14 +242,13 @@ function filterUsers() {
       user.email.toLowerCase().includes(search);
 
     const matchesRole = !role || user.role === role;
-    const matchesTenant = !tenant || user.tenant === tenant;
+    const matchesTenant = !tenantIdValue || user.tenantId === Number(tenantIdValue);
     const matchesStatus = !status || user.status === status;
 
     return matchesSearch && matchesRole && matchesTenant && matchesStatus;
   });
 }
 
-// Función para renderizar la tabla de usuarios según los resultados filtrados
 function renderUsers(users) {
   updateSummary();
   updateResultCount(users.length);
@@ -300,7 +256,7 @@ function renderUsers(users) {
   if (users.length === 0) {
     usersTableBody.innerHTML = `
       <tr>
-        <td colspan="8" class="text-center text-muted py-4">
+        <td colspan="7" class="text-center text-muted py-4">
           No hay usuarios para mostrar.
         </td>
       </tr>
@@ -312,14 +268,9 @@ function renderUsers(users) {
     <tr>
       <td><strong>${user.username}</strong></td>
       <td>${user.fullName}</td>
-      <td>${user.email}</td>
+      <td>${user.email || '<span class="text-muted">—</span>'}</td>
       <td>${renderRoleBadge(user)}</td>
-      <td>${user.tenant || '<span class="text-muted">Sin locatario</span>'}</td>
-      <td>
-        <span class="badge text-bg-light">
-          ${user.permissions.length} permiso${user.permissions.length === 1 ? '' : 's'}
-        </span>
-      </td>
+      <td>${tenantLabel(user)}</td>
       <td>${renderStatusBadge(user)}</td>
       <td class="text-end">
         <div class="btn-group">
@@ -368,20 +319,17 @@ function renderUsers(users) {
   `).join('');
 }
 
-// Función para actualizar los contadores de resumen en la parte superior de la página
 function updateSummary() {
-  totalUsers.textContent = String(usersMock.length);
-  activeUsers.textContent = String(usersMock.filter((user) => user.status === 'active').length);
-  adminUsers.textContent = String(usersMock.filter((user) => user.role === 'admin').length);
-  tenantUsers.textContent = String(usersMock.filter((user) => user.role === 'tenant_user').length);
+  totalUsers.textContent = String(allUsers.length);
+  activeUsers.textContent = String(allUsers.filter((user) => user.status === 'active').length);
+  adminUsers.textContent = String(allUsers.filter((user) => user.role === 'admin').length);
+  tenantUsers.textContent = String(allUsers.filter((user) => user.role === 'tenant_user').length);
 }
 
-// Función para actualizar el contador de resultados mostrados según los filtros aplicados
 function updateResultCount(count) {
   usersResultCountBadge.textContent = `${count} usuario${count === 1 ? '' : 's'}`;
 }
 
-// Función para renderizar el badge de rol con estilos diferenciados para admin y locatario
 function renderRoleBadge(user) {
   if (user.role === 'admin') {
     return `<span class="badge text-bg-primary">${user.roleText}</span>`;
@@ -390,7 +338,6 @@ function renderRoleBadge(user) {
   return `<span class="badge text-bg-info">${user.roleText}</span>`;
 }
 
-// Función para renderizar el badge de estado con estilos diferenciados para activo e inactivo
 function renderStatusBadge(user) {
   if (user.status === 'active') {
     return `<span class="badge text-bg-success">${user.statusText}</span>`;
@@ -399,107 +346,107 @@ function renderStatusBadge(user) {
   return `<span class="badge text-bg-secondary">${user.statusText}</span>`;
 }
 
-// Función para abrir el modal de creación/edición de usuario, precargando datos si se proporciona un usuario
+function tenantLabel(user) {
+  if (user.tenantId && tenantNameById.has(user.tenantId)) {
+    return tenantNameById.get(user.tenantId);
+  }
+  return '<span class="text-muted">Sin locatario</span>';
+}
+
+function parkingSiteLabel(user) {
+  if (user.parkingSiteId && parkingSiteNameById.has(user.parkingSiteId)) {
+    return parkingSiteNameById.get(user.parkingSiteId);
+  }
+  return 'Sin unidad';
+}
+
 function openUserFormModal(user = null) {
   userForm.reset();
   userId.value = '';
-  clearPermissionCheckboxes();
 
   if (user) {
     userFormModalLabel.textContent = 'Editar usuario';
     userId.value = user.id;
     formUsername.value = user.username;
-    formFullName.value = user.fullName;
+    formFirstName.value = user.firstName;
+    formLastName.value = user.lastName;
     formEmail.value = user.email;
     formRole.value = user.role;
-    formTenant.value = user.tenant;
+    formTenant.value = user.tenantId ? String(user.tenantId) : '';
+    formParkingSite.value = user.parkingSiteId ? String(user.parkingSiteId) : '';
     formStatus.value = user.status;
-    setSelectedPermissions(user.permissions);
+    passwordHelp.textContent = 'Déjala vacía para conservar la contraseña actual.';
   } else {
     userFormModalLabel.textContent = 'Nuevo usuario';
     formStatus.value = 'active';
+    passwordHelp.textContent = 'Obligatoria al crear el usuario.';
   }
 
-  const modal = window.bootstrap.Modal.getOrCreateInstance(document.getElementById('userFormModal'));
-  modal.show();
+  applyRoleFieldRules();
+
+  window.bootstrap.Modal.getOrCreateInstance(document.getElementById('userFormModal')).show();
 }
 
-// Función para crear un nuevo usuario con los datos del formulario y permisos seleccionados
-function createUser(selectedPermissions) {
-  const newUser = {
-    id: getNextUserId(),
-    username: formUsername.value.trim(),
-    fullName: formFullName.value.trim(),
-    email: formEmail.value.trim(),
-    role: formRole.value,
-    roleText: getRoleText(formRole.value),
-    tenant: formRole.value === 'admin' ? '' : formTenant.value,
-    status: formStatus.value,
-    statusText: getStatusText(formStatus.value),
-    permissions: selectedPermissions,
-  };
+// Un admin no necesita locatario ni unidad: se limpian y deshabilitan.
+function applyRoleFieldRules() {
+  const isAdmin = formRole.value === 'admin';
 
-  usersMock = [newUser, ...usersMock];
+  if (isAdmin) {
+    formTenant.value = '';
+    formParkingSite.value = '';
+  }
+
+  formTenant.disabled = isAdmin;
+  formParkingSite.disabled = isAdmin;
 }
 
-// Función para actualizar un usuario existente con los datos del formulario y permisos seleccionados
-function updateUser(id, selectedPermissions) {
-  usersMock = usersMock.map((user) => {
-    if (user.id !== id) {
-      return user;
+async function toggleUserStatus(user) {
+  try {
+    if (user.status === 'active') {
+      await deactivateUser(user.id);
+    } else {
+      await reactivateUser(user.id);
     }
 
-    return {
-      ...user,
-      username: formUsername.value.trim(),
-      fullName: formFullName.value.trim(),
-      email: formEmail.value.trim(),
-      role: formRole.value,
-      roleText: getRoleText(formRole.value),
-      tenant: formRole.value === 'admin' ? '' : formTenant.value,
-      status: formStatus.value,
-      statusText: getStatusText(formStatus.value),
-      permissions: selectedPermissions,
-    };
-  });
+    allUsers = await listUsers();
+    currentResults = filterUsers();
+    renderUsers(currentResults);
+
+    showAlert(
+      'success',
+      `Usuario ${user.username} ${user.status === 'active' ? 'desactivado' : 'activado'} correctamente.`,
+    );
+  } catch (error) {
+    showAlert('danger', error.message);
+  }
 }
 
-// Función para alternar el estado activo/inactivo de un usuario y actualizar la tabla en consecuencia
-function toggleUserStatus(user) {
-  const newStatus = user.status === 'active' ? 'inactive' : 'active';
+async function resetUserPassword(user) {
+  const newPassword = window.prompt(`Nueva contraseña para ${user.username} (mínimo 8 caracteres):`);
 
-  usersMock = usersMock.map((item) => {
-    if (item.id !== user.id) {
-      return item;
-    }
+  if (newPassword === null) {
+    return; // el admin canceló
+  }
 
-    return {
-      ...item,
-      status: newStatus,
-      statusText: getStatusText(newStatus),
-    };
-  });
+  if (newPassword.trim().length < 8) {
+    showAlert('danger', 'La contraseña debe tener al menos 8 caracteres.');
+    return;
+  }
 
-  currentResults = filterUsers();
-  renderUsers(currentResults);
-
-  showAlert(
-    'success',
-    `Usuario ${user.username} ${newStatus === 'active' ? 'activado' : 'desactivado'} correctamente.`
-  );
+  try {
+    await setUserPassword(user.id, newPassword.trim());
+    showAlert('success', `Contraseña de ${user.username} actualizada correctamente.`);
+  } catch (error) {
+    showAlert('danger', error.message);
+  }
 }
 
-// Función para simular el restablecimiento de contraseña de un usuario, mostrando una alerta de éxito
-function resetUserPassword(user) {
-  showAlert('success', `Contraseña de ${user.username} restablecida de forma simulada.`);
-}
-
-// Función para mostrar el modal de detalle de usuario con toda su información y permisos asignados
 function showUserDetail(user) {
   detailUsername.textContent = user.username;
   detailFullName.textContent = user.fullName;
-  detailEmail.textContent = user.email;
-  detailTenant.textContent = user.tenant || 'Sin locatario';
+  detailEmail.textContent = user.email || '—';
+  detailTenant.textContent = user.tenantId ? tenantNameById.get(user.tenantId) ?? '—' : 'Sin locatario';
+  detailParkingSite.textContent = parkingSiteLabel(user);
 
   detailRole.textContent = user.roleText;
   detailRole.className = `badge ${user.role === 'admin' ? 'text-bg-primary' : 'text-bg-info'}`;
@@ -507,74 +454,14 @@ function showUserDetail(user) {
   detailStatus.textContent = user.statusText;
   detailStatus.className = `badge ${user.status === 'active' ? 'text-bg-success' : 'text-bg-secondary'}`;
 
-  const permissions = getPermissionNames(user.permissions);
-
-  detailPermissions.innerHTML = permissions.length
-    ? permissions.map((name) => `<span class="badge text-bg-light">${name}</span>`).join('')
-    : '<span class="text-muted">Sin permisos asignados</span>';
-
-  const modal = window.bootstrap.Modal.getOrCreateInstance(document.getElementById('userDetailModal'));
-  modal.show();
+  window.bootstrap.Modal.getOrCreateInstance(document.getElementById('userDetailModal')).show();
 }
 
-// Función para obtener los permisos seleccionados en el formulario de creación/edición de usuario, retornando un array con los IDs de los permisos seleccionados
-function getSelectedPermissions() {
-  return [...document.querySelectorAll('.permission-checkbox:checked')]
-    .map((checkbox) => checkbox.value);
-}
-
-// Función para establecer los permisos seleccionados en el formulario de creación/edición de usuario
-function setSelectedPermissions(permissions) {
-  document.querySelectorAll('.permission-checkbox').forEach((checkbox) => {
-    checkbox.checked = permissions.includes(checkbox.value);
-  });
-}
-
-// Función para limpiar el estado de los checkboxes de permisos al abrir el formulario para crear un nuevo usuario
-function clearPermissionCheckboxes() {
-  document.querySelectorAll('.permission-checkbox').forEach((checkbox) => {
-    checkbox.checked = false;
-  });
-}
-
-// Función para obtener los nombres de los permisos a partir de sus IDs, utilizando el mock de descuentos para mapear los IDs a nombres legibles
-function getPermissionNames(permissionIds) {
-  return permissionIds.map((permissionId) => {
-    const discount = discountsMock.find((item) => item.id === permissionId);
-    return discount ? discount.name : permissionId;
-  });
-}
-
-// Función para obtener el texto legible del rol a partir de su valor, diferenciando entre admin y locatario
-function getRoleText(role) {
-  if (role === 'admin') {
-    return 'Administrador';
-  }
-
-  return 'Locatario';
-}
-
-// Función para obtener el texto legible del estado a partir de su valor, diferenciando entre activo e inactivo
-function getStatusText(status) {
-  if (status === 'active') {
-    return 'Activo';
-  }
-
-  return 'Inactivo';
-}
-
-// Función para obtener el siguiente ID disponible para un nuevo usuario, calculando el máximo ID actual en el mock de usuarios y sumando 1, o retornando 1 si no hay usuarios
-function getNextUserId() {
-  return usersMock.length ? Math.max(...usersMock.map((user) => user.id)) + 1 : 1;
-}
-
-// Función para mostrar una alerta con un mensaje específico y un tipo de alerta (success, danger, warning), actualizando el contenido y la clase del elemento de alerta en el DOM
 function showAlert(type, message) {
   usersAlert.className = `alert alert-${type}`;
   usersAlert.textContent = message;
 }
 
-// Función para ocultar la alerta, limpiando su contenido y aplicando la clase de oculto para que no se muestre en la interfaz
 function hideAlert() {
   usersAlert.className = 'alert d-none';
   usersAlert.textContent = '';

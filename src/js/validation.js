@@ -1,5 +1,4 @@
 import { searchTicket, applyValidation } from './parking-api.js';
-import { getSession, isAdmin } from './auth.js';
 
 const ticketSearchForm = document.getElementById('ticketSearchForm');
 const ticketNumberInput = document.getElementById('ticketNumber');
@@ -56,12 +55,9 @@ ticketSearchForm?.addEventListener('submit', async (event) => {
 
     currentTicket = response.ticket;
 
-    // Los administradores ven todos los descuentos disponibles.
-    // Los locatarios solo ven los que tienen asignados en su perfil.
-    const session = getSession();
-    availableDiscounts = (isAdmin(session) || !session?.permissions)
-      ? response.discounts
-      : response.discounts.filter((d) => session.permissions.includes(d.id));
+    // El backend ya filtra las validaciones aplicables: por unidad del boleto y,
+    // si el usuario es locatario, por su locatario asignado.
+    availableDiscounts = response.discounts;
 
     renderTicket(currentTicket);
     renderDiscounts(availableDiscounts);

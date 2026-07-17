@@ -1,69 +1,20 @@
-const discountsMock = [
-  {
-    id: 'two_hours_free',
-    name: '2 horas gratis',
-  },
-  {
-    id: 'fifty_percent',
-    name: '50% descuento',
-  },
-  {
-    id: 'preferred_rate',
-    name: 'Tarifa preferente',
-  },
-  {
-    id: 'full_courtesy',
-    name: 'Cortesía total',
-  },
-];
+import {
+  listTenantsFull,
+  createTenant,
+  updateTenant,
+  deactivateTenant,
+  reactivateTenant,
+} from './tenants-api.js';
+import { listParkingSites, listUsersLite } from './lookups-api.js';
 
-let tenantsMock = [
-  {
-    id: 1,
-    commercialName: 'Cine',
-    businessName: 'Cines del Centro S.A. de C.V.',
-    code: 'CINE-001',
-    status: 'active',
-    statusText: 'Activo',
-    description: 'Locatario autorizado para aplicar validaciones de cortesía parcial.',
-    permissions: ['two_hours_free'],
-    users: ['usuario.cine01', 'usuario.cine02'],
-  },
-  {
-    id: 2,
-    commercialName: 'Gimnasio',
-    businessName: 'Fitness Plaza S.A. de C.V.',
-    code: 'GYM-001',
-    status: 'active',
-    statusText: 'Activo',
-    description: 'Locatario con validaciones para clientes con membresía activa.',
-    permissions: ['fifty_percent', 'preferred_rate'],
-    users: ['usuario.gym01'],
-  },
-  {
-    id: 3,
-    commercialName: 'Restaurante',
-    businessName: 'Restaurantes del Patio S.A. de C.V.',
-    code: 'REST-001',
-    status: 'inactive',
-    statusText: 'Inactivo',
-    description: 'Locatario temporalmente inactivo por revisión administrativa.',
-    permissions: ['preferred_rate'],
-    users: ['usuario.rest01'],
-  },
-  {
-    id: 4,
-    commercialName: 'Empresa X',
-    businessName: 'Empresa X Servicios Corporativos S.A. de C.V.',
-    code: 'EMPX-001',
-    status: 'active',
-    statusText: 'Activo',
-    description: 'Empresa autorizada para validaciones corporativas.',
-    permissions: ['full_courtesy'],
-    users: ['empresa.x01', 'empresa.x02', 'empresa.x03'],
-  },
-];
+// Estado en memoria, cargado desde el backend
+let allTenants = [];
+let parkingSites = []; // [{ id, name }]
+let parkingSiteNameById = new Map();
+let usernamesByTenantId = new Map(); // tenantId -> [username]
+let currentResults = [];
 
+// Elementos del DOM
 const tenantsFilterForm = document.getElementById('tenantsFilterForm');
 const clearTenantFiltersButton = document.getElementById('clearTenantFiltersButton');
 const openCreateTenantModalButton = document.getElementById('openCreateTenantModalButton');
@@ -78,33 +29,63 @@ const tenantsResultCountBadge = document.getElementById('tenantsResultCountBadge
 const totalTenants = document.getElementById('totalTenants');
 const activeTenants = document.getElementById('activeTenants');
 const totalAssociatedUsers = document.getElementById('totalAssociatedUsers');
-const totalAssignedPermissions = document.getElementById('totalAssignedPermissions');
+const tenantsWithoutSite = document.getElementById('tenantsWithoutSite');
 
 const tenantForm = document.getElementById('tenantForm');
 const tenantFormModalLabel = document.getElementById('tenantFormModalLabel');
 const tenantId = document.getElementById('tenantId');
 const formCommercialName = document.getElementById('formCommercialName');
 const formBusinessName = document.getElementById('formBusinessName');
-const formTenantCode = document.getElementById('formTenantCode');
 const formTenantStatus = document.getElementById('formTenantStatus');
 const formDescription = document.getElementById('formDescription');
-const tenantPermissionsContainer = document.getElementById('tenantPermissionsContainer');
+const tenantParkingSitesContainer = document.getElementById('tenantParkingSitesContainer');
 
 const detailCommercialName = document.getElementById('detailCommercialName');
 const detailBusinessName = document.getElementById('detailBusinessName');
-const detailTenantCode = document.getElementById('detailTenantCode');
 const detailTenantStatus = document.getElementById('detailTenantStatus');
 const detailDescription = document.getElementById('detailDescription');
 const detailAssociatedUsers = document.getElementById('detailAssociatedUsers');
-const detailTenantPermissions = document.getElementById('detailTenantPermissions');
+const detailTenantParkingSites = document.getElementById('detailTenantParkingSites');
 
-let currentResults = [...tenantsMock];
-
+// Inicialización
 document.addEventListener('DOMContentLoaded', () => {
-  renderTenantPermissionCheckboxes();
-  renderTenants(tenantsMock);
+  initialize();
 });
 
+async function initialize() {
+  try {
+    const [sites, users] = await Promise.all([listParkingSites(), listUsersLite()]);
+
+    parkingSites = sites;
+    parkingSiteNameById = new Map(parkingSites.map((p) => [p.id, p.name]));
+    usernamesByTenantId = groupUsernamesByTenant(users);
+
+    renderParkingSiteCheckboxes();
+
+    allTenants = await listTenantsFull();
+    currentResults = [...allTenants];
+    renderTenants(currentResults);
+  } catch (error) {
+    showAlert('danger', `No se pudieron cargar los locatarios: ${error.message}`);
+  }
+}
+
+function groupUsernamesByTenant(users) {
+  const map = new Map();
+
+  users.forEach((user) => {
+    if (!user.tenantId) {
+      return;
+    }
+    const current = map.get(user.tenantId) ?? [];
+    current.push(user.username);
+    map.set(user.tenantId, current);
+  });
+
+  return map;
+}
+
+// Filtros
 tenantsFilterForm?.addEventListener('submit', (event) => {
   event.preventDefault();
 
@@ -120,7 +101,7 @@ tenantsFilterForm?.addEventListener('submit', (event) => {
 
 clearTenantFiltersButton?.addEventListener('click', () => {
   tenantsFilterForm.reset();
-  currentResults = [...tenantsMock];
+  currentResults = [...allTenants];
   renderTenants(currentResults);
   hideAlert();
 });
@@ -129,6 +110,7 @@ openCreateTenantModalButton?.addEventListener('click', () => {
   openTenantFormModal();
 });
 
+// Acciones en la tabla
 tenantsTableBody?.addEventListener('click', (event) => {
   const actionButton = event.target.closest('[data-action]');
 
@@ -138,7 +120,7 @@ tenantsTableBody?.addEventListener('click', (event) => {
 
   const action = actionButton.dataset.action;
   const id = Number(actionButton.dataset.id);
-  const tenant = tenantsMock.find((item) => item.id === id);
+  const tenant = allTenants.find((item) => item.id === id);
 
   if (!tenant) {
     showAlert('danger', 'No se encontró el locatario seleccionado.');
@@ -158,45 +140,57 @@ tenantsTableBody?.addEventListener('click', (event) => {
   }
 });
 
-tenantForm?.addEventListener('submit', (event) => {
+// Alta / edición
+tenantForm?.addEventListener('submit', async (event) => {
   event.preventDefault();
 
-  const selectedPermissions = getSelectedPermissions();
+  const isEditing = Boolean(tenantId.value);
 
-  if (selectedPermissions.length === 0) {
-    showAlert('danger', 'Selecciona al menos una validación permitida para el locatario.');
+  const uiTenant = {
+    commercialName: formCommercialName.value.trim(),
+    businessName: formBusinessName.value.trim(),
+    description: formDescription.value.trim(),
+    parkingSiteIds: getSelectedParkingSiteIds(),
+    status: formTenantStatus.value,
+  };
+
+  try {
+    if (isEditing) {
+      await updateTenant(Number(tenantId.value), uiTenant);
+    } else {
+      await createTenant(uiTenant);
+    }
+
+    allTenants = await listTenantsFull();
+    currentResults = filterTenants();
+    renderTenants(currentResults);
+
+    showAlert('success', isEditing ? 'Locatario actualizado correctamente.' : 'Locatario creado correctamente.');
+
+    window.bootstrap.Modal.getOrCreateInstance(document.getElementById('tenantFormModal')).hide();
+  } catch (error) {
+    showAlert('danger', error.message);
+  }
+});
+
+function renderParkingSiteCheckboxes() {
+  if (parkingSites.length === 0) {
+    tenantParkingSitesContainer.innerHTML =
+      '<div class="col-12"><span class="text-muted">No hay unidades registradas.</span></div>';
     return;
   }
 
-  const id = tenantId.value ? Number(tenantId.value) : null;
-
-  if (id) {
-    updateTenant(id, selectedPermissions);
-    showAlert('success', 'Locatario actualizado correctamente.');
-  } else {
-    createTenant(selectedPermissions);
-    showAlert('success', 'Locatario creado correctamente.');
-  }
-
-  currentResults = [...tenantsMock];
-  renderTenants(currentResults);
-
-  const modal = window.bootstrap.Modal.getOrCreateInstance(document.getElementById('tenantFormModal'));
-  modal.hide();
-});
-
-function renderTenantPermissionCheckboxes() {
-  tenantPermissionsContainer.innerHTML = discountsMock.map((discount) => `
+  tenantParkingSitesContainer.innerHTML = parkingSites.map((site) => `
     <div class="col-12 col-md-6">
       <div class="form-check border rounded-3 p-3 ps-5 bg-light">
         <input
-          class="form-check-input tenant-permission-checkbox"
+          class="form-check-input tenant-parking-checkbox"
           type="checkbox"
-          value="${discount.id}"
-          id="tenant-permission-${discount.id}"
+          value="${site.id}"
+          id="tenant-parking-${site.id}"
         >
-        <label class="form-check-label" for="tenant-permission-${discount.id}">
-          ${discount.name}
+        <label class="form-check-label" for="tenant-parking-${site.id}">
+          ${site.name}
         </label>
       </div>
     </div>
@@ -207,12 +201,11 @@ function filterTenants() {
   const search = tenantSearch.value.trim().toLowerCase();
   const status = tenantStatusFilter.value;
 
-  return tenantsMock.filter((tenant) => {
+  return allTenants.filter((tenant) => {
     const matchesSearch =
       !search ||
       tenant.commercialName.toLowerCase().includes(search) ||
-      tenant.businessName.toLowerCase().includes(search) ||
-      tenant.code.toLowerCase().includes(search);
+      tenant.businessName.toLowerCase().includes(search);
 
     const matchesStatus = !status || tenant.status === status;
 
@@ -227,7 +220,7 @@ function renderTenants(tenants) {
   if (tenants.length === 0) {
     tenantsTableBody.innerHTML = `
       <tr>
-        <td colspan="7" class="text-center text-muted py-4">
+        <td colspan="6" class="text-center text-muted py-4">
           No hay locatarios para mostrar.
         </td>
       </tr>
@@ -235,19 +228,22 @@ function renderTenants(tenants) {
     return;
   }
 
-  tenantsTableBody.innerHTML = tenants.map((tenant) => `
+  tenantsTableBody.innerHTML = tenants.map((tenant) => {
+    const userCount = usersOf(tenant).length;
+    const siteCount = tenant.parkingSiteIds.length;
+
+    return `
     <tr>
-      <td><strong>${tenant.commercialName}</strong></td>
+      <td><strong>${tenant.commercialName || '<span class="text-muted">Sin nombre comercial</span>'}</strong></td>
       <td>${tenant.businessName}</td>
-      <td><span class="badge text-bg-light">${tenant.code}</span></td>
       <td>
         <span class="badge text-bg-light">
-          ${tenant.users.length} usuario${tenant.users.length === 1 ? '' : 's'}
+          ${siteCount} unidad${siteCount === 1 ? '' : 'es'}
         </span>
       </td>
       <td>
         <span class="badge text-bg-light">
-          ${tenant.permissions.length} permiso${tenant.permissions.length === 1 ? '' : 's'}
+          ${userCount} usuario${userCount === 1 ? '' : 's'}
         </span>
       </td>
       <td>${renderStatusBadge(tenant)}</td>
@@ -285,17 +281,22 @@ function renderTenants(tenants) {
         </div>
       </td>
     </tr>
-  `).join('');
+  `;
+  }).join('');
+}
+
+function usersOf(tenant) {
+  return usernamesByTenantId.get(tenant.id) ?? [];
 }
 
 function updateSummary() {
-  const associatedUsers = tenantsMock.reduce((total, tenant) => total + tenant.users.length, 0);
-  const assignedPermissions = tenantsMock.reduce((total, tenant) => total + tenant.permissions.length, 0);
+  const associatedUsers = allTenants.reduce((total, tenant) => total + usersOf(tenant).length, 0);
+  const withoutSite = allTenants.filter((tenant) => tenant.parkingSiteIds.length === 0).length;
 
-  totalTenants.textContent = String(tenantsMock.length);
-  activeTenants.textContent = String(tenantsMock.filter((tenant) => tenant.status === 'active').length);
+  totalTenants.textContent = String(allTenants.length);
+  activeTenants.textContent = String(allTenants.filter((tenant) => tenant.status === 'active').length);
   totalAssociatedUsers.textContent = String(associatedUsers);
-  totalAssignedPermissions.textContent = String(assignedPermissions);
+  tenantsWithoutSite.textContent = String(withoutSite);
 }
 
 function updateResultCount(count) {
@@ -313,150 +314,93 @@ function renderStatusBadge(tenant) {
 function openTenantFormModal(tenant = null) {
   tenantForm.reset();
   tenantId.value = '';
-  clearPermissionCheckboxes();
+  clearParkingSiteCheckboxes();
 
   if (tenant) {
     tenantFormModalLabel.textContent = 'Editar locatario';
     tenantId.value = tenant.id;
     formCommercialName.value = tenant.commercialName;
     formBusinessName.value = tenant.businessName;
-    formTenantCode.value = tenant.code;
     formTenantStatus.value = tenant.status;
     formDescription.value = tenant.description;
-    setSelectedPermissions(tenant.permissions);
+    setSelectedParkingSiteIds(tenant.parkingSiteIds);
   } else {
     tenantFormModalLabel.textContent = 'Nuevo locatario';
     formTenantStatus.value = 'active';
   }
 
-  const modal = window.bootstrap.Modal.getOrCreateInstance(document.getElementById('tenantFormModal'));
-  modal.show();
+  window.bootstrap.Modal.getOrCreateInstance(document.getElementById('tenantFormModal')).show();
 }
 
-function createTenant(selectedPermissions) {
-  const newTenant = {
-    id: getNextTenantId(),
-    commercialName: formCommercialName.value.trim(),
-    businessName: formBusinessName.value.trim(),
-    code: formTenantCode.value.trim().toUpperCase(),
-    status: formTenantStatus.value,
-    statusText: getStatusText(formTenantStatus.value),
-    description: formDescription.value.trim() || 'Sin notas registradas.',
-    permissions: selectedPermissions,
-    users: [],
-  };
-
-  tenantsMock = [newTenant, ...tenantsMock];
-}
-
-function updateTenant(id, selectedPermissions) {
-  tenantsMock = tenantsMock.map((tenant) => {
-    if (tenant.id !== id) {
-      return tenant;
+async function toggleTenantStatus(tenant) {
+  try {
+    if (tenant.status === 'active') {
+      await deactivateTenant(tenant.id);
+    } else {
+      await reactivateTenant(tenant.id);
     }
 
-    return {
-      ...tenant,
-      commercialName: formCommercialName.value.trim(),
-      businessName: formBusinessName.value.trim(),
-      code: formTenantCode.value.trim().toUpperCase(),
-      status: formTenantStatus.value,
-      statusText: getStatusText(formTenantStatus.value),
-      description: formDescription.value.trim() || 'Sin notas registradas.',
-      permissions: selectedPermissions,
-    };
-  });
-}
+    allTenants = await listTenantsFull();
+    currentResults = filterTenants();
+    renderTenants(currentResults);
 
-function toggleTenantStatus(tenant) {
-  const newStatus = tenant.status === 'active' ? 'inactive' : 'active';
-
-  tenantsMock = tenantsMock.map((item) => {
-    if (item.id !== tenant.id) {
-      return item;
-    }
-
-    return {
-      ...item,
-      status: newStatus,
-      statusText: getStatusText(newStatus),
-    };
-  });
-
-  currentResults = filterTenants();
-  renderTenants(currentResults);
-
-  showAlert(
-    'success',
-    `Locatario ${tenant.commercialName} ${newStatus === 'active' ? 'activado' : 'desactivado'} correctamente.`
-  );
+    showAlert(
+      'success',
+      `Locatario ${tenant.commercialName || tenant.businessName} ${tenant.status === 'active' ? 'desactivado' : 'activado'} correctamente.`,
+    );
+  } catch (error) {
+    showAlert('danger', error.message);
+  }
 }
 
 function showTenantDetail(tenant) {
-  detailCommercialName.textContent = tenant.commercialName;
+  detailCommercialName.textContent = tenant.commercialName || '—';
   detailBusinessName.textContent = tenant.businessName;
-  detailTenantCode.textContent = tenant.code;
-  detailDescription.textContent = tenant.description;
+  detailDescription.textContent = tenant.description || 'Sin notas registradas.';
 
   detailTenantStatus.textContent = tenant.statusText;
   detailTenantStatus.className = `badge ${tenant.status === 'active' ? 'text-bg-success' : 'text-bg-secondary'}`;
 
-  detailAssociatedUsers.innerHTML = tenant.users.length
-    ? tenant.users.map((user) => `
+  const usernames = usersOf(tenant);
+
+  detailAssociatedUsers.innerHTML = usernames.length
+    ? usernames.map((username) => `
         <div class="d-flex align-items-center justify-content-between border rounded-3 p-2 bg-light">
           <span>
             <i class="bi bi-person-circle me-1"></i>
-            ${user}
+            ${username}
           </span>
           <span class="badge text-bg-secondary">Usuario</span>
         </div>
       `).join('')
     : '<span class="text-muted">Sin usuarios asociados</span>';
 
-  const permissions = getPermissionNames(tenant.permissions);
+  const siteNames = tenant.parkingSiteIds
+    .map((id) => parkingSiteNameById.get(id))
+    .filter(Boolean);
 
-  detailTenantPermissions.innerHTML = permissions.length
-    ? permissions.map((name) => `<span class="badge text-bg-light">${name}</span>`).join('')
-    : '<span class="text-muted">Sin permisos asignados</span>';
+  detailTenantParkingSites.innerHTML = siteNames.length
+    ? siteNames.map((name) => `<span class="badge text-bg-light">${name}</span>`).join('')
+    : '<span class="text-muted">Sin unidades asignadas</span>';
 
-  const modal = window.bootstrap.Modal.getOrCreateInstance(document.getElementById('tenantDetailModal'));
-  modal.show();
+  window.bootstrap.Modal.getOrCreateInstance(document.getElementById('tenantDetailModal')).show();
 }
 
-function getSelectedPermissions() {
-  return [...document.querySelectorAll('.tenant-permission-checkbox:checked')]
-    .map((checkbox) => checkbox.value);
+function getSelectedParkingSiteIds() {
+  return [...document.querySelectorAll('.tenant-parking-checkbox:checked')]
+    .map((checkbox) => Number(checkbox.value));
 }
 
-function setSelectedPermissions(permissions) {
-  document.querySelectorAll('.tenant-permission-checkbox').forEach((checkbox) => {
-    checkbox.checked = permissions.includes(checkbox.value);
+function setSelectedParkingSiteIds(ids) {
+  document.querySelectorAll('.tenant-parking-checkbox').forEach((checkbox) => {
+    checkbox.checked = ids.includes(Number(checkbox.value));
   });
 }
 
-function clearPermissionCheckboxes() {
-  document.querySelectorAll('.tenant-permission-checkbox').forEach((checkbox) => {
+function clearParkingSiteCheckboxes() {
+  document.querySelectorAll('.tenant-parking-checkbox').forEach((checkbox) => {
     checkbox.checked = false;
   });
-}
-
-function getPermissionNames(permissionIds) {
-  return permissionIds.map((permissionId) => {
-    const discount = discountsMock.find((item) => item.id === permissionId);
-    return discount ? discount.name : permissionId;
-  });
-}
-
-function getStatusText(status) {
-  if (status === 'active') {
-    return 'Activo';
-  }
-
-  return 'Inactivo';
-}
-
-function getNextTenantId() {
-  return tenantsMock.length ? Math.max(...tenantsMock.map((tenant) => tenant.id)) + 1 : 1;
 }
 
 function showAlert(type, message) {

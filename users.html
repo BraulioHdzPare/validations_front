@@ -229,7 +229,6 @@
                   <th>Correo</th>
                   <th>Rol</th>
                   <th>Locatario</th>
-                  <th>Permisos</th>
                   <th>Estado</th>
                   <th class="text-end">Acciones</th>
                 </tr>
@@ -237,7 +236,7 @@
 
               <tbody id="usersTableBody">
                 <tr>
-                  <td colspan="8" class="text-center text-muted py-4">
+                  <td colspan="7" class="text-center text-muted py-4">
                     Cargando usuarios...
                   </td>
                 </tr>
@@ -268,13 +267,18 @@
             </div>
 
             <div class="col-12 col-md-6">
-              <label for="formFullName" class="form-label">Nombre completo</label>
-              <input type="text" id="formFullName" class="form-control" required>
+              <label for="formEmail" class="form-label">Correo</label>
+              <input type="email" id="formEmail" class="form-control">
             </div>
 
             <div class="col-12 col-md-6">
-              <label for="formEmail" class="form-label">Correo</label>
-              <input type="email" id="formEmail" class="form-control" required>
+              <label for="formFirstName" class="form-label">Nombre</label>
+              <input type="text" id="formFirstName" class="form-control">
+            </div>
+
+            <div class="col-12 col-md-6">
+              <label for="formLastName" class="form-label">Apellidos</label>
+              <input type="text" id="formLastName" class="form-control">
             </div>
 
             <div class="col-12 col-md-6">
@@ -283,6 +287,14 @@
                 <option value="">Selecciona un rol</option>
                 <option value="admin">Administrador</option>
                 <option value="tenant_user">Locatario</option>
+              </select>
+            </div>
+
+            <div class="col-12 col-md-6">
+              <label for="formStatus" class="form-label">Estado</label>
+              <select id="formStatus" class="form-select" required>
+                <option value="active">Activo</option>
+                <option value="inactive">Inactivo</option>
               </select>
             </div>
 
@@ -297,22 +309,20 @@
             </div>
 
             <div class="col-12 col-md-6">
-              <label for="formStatus" class="form-label">Estado</label>
-              <select id="formStatus" class="form-select" required>
-                <option value="active">Activo</option>
-                <option value="inactive">Inactivo</option>
+              <label for="formParkingSite" class="form-label">Unidad</label>
+              <select id="formParkingSite" class="form-select">
+                <option value="">Sin unidad</option>
               </select>
+              <div class="form-text">
+                Requerida para que un locatario pueda validar boletos.
+              </div>
             </div>
 
-            <div class="col-12">
-              <label class="form-label">Validaciones permitidas</label>
-
-              <div id="discountPermissionsContainer" class="row g-2">
-                <!-- Permisos renderizados desde JS -->
-              </div>
-
-              <div class="form-text">
-                Estos permisos controlan qué descuentos puede aplicar el usuario.
+            <div class="col-12 col-md-6">
+              <label for="formPassword" class="form-label">Contraseña</label>
+              <input type="password" id="formPassword" class="form-control" autocomplete="new-password">
+              <div id="passwordHelp" class="form-text">
+                Obligatoria al crear el usuario.
               </div>
             </div>
           </div>
@@ -367,16 +377,14 @@
               <span id="detailStatus" class="badge">-</span>
             </div>
 
-            <div class="col-12">
+            <div class="col-12 col-md-6">
               <small class="text-muted d-block">Locatario</small>
               <strong id="detailTenant">-</strong>
             </div>
 
-            <div class="col-12">
-              <small class="text-muted d-block mb-2">Validaciones permitidas</small>
-              <div id="detailPermissions" class="d-flex flex-wrap gap-2">
-                -
-              </div>
+            <div class="col-12 col-md-6">
+              <small class="text-muted d-block">Unidad</small>
+              <strong id="detailParkingSite">-</strong>
             </div>
           </div>
         </div>

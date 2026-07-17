@@ -1,73 +1,25 @@
+import {
+  listDiscounts,
+  createDiscount,
+  updateDiscount,
+  deactivateDiscount,
+  reactivateDiscount,
+} from './discounts-api.js';
+import { listParkingSites, listTenants } from './lookups-api.js';
 
-// Mock de descuentos para pruebas y desarrollo. En un escenario real, estos datos se obtendrían de una API o base de datos.
-let discountsMock = [
-  {
-    id: 1,
-    name: '2 horas gratis',
-    code: 'TWO_HOURS_FREE',
-    designaCode: 'DSG-VAL-001',
-    type: 'time',
-    typeText: 'Tiempo',
-    value: 120,
-    valueText: '120 min',
-    requiresAmount: false,
-    requiresConfirmation: true,
-    status: 'active',
-    statusText: 'Activo',
-    description: 'Validación para otorgar dos horas sin costo al cliente del locatario.',
-  },
-  {
-    id: 2,
-    name: '50% descuento',
-    code: 'FIFTY_PERCENT',
-    designaCode: 'DSG-VAL-002',
-    type: 'percentage',
-    typeText: 'Porcentaje',
-    value: 50,
-    valueText: '50%',
-    requiresAmount: false,
-    requiresConfirmation: true,
-    status: 'active',
-    statusText: 'Activo',
-    description: 'Aplica un descuento del 50% sobre el monto actual del boleto.',
-  },
-  {
-    id: 3,
-    name: 'Tarifa preferente',
-    code: 'PREFERRED_RATE',
-    designaCode: 'DSG-VAL-003',
-    type: 'fixed_rate',
-    typeText: 'Tarifa fija',
-    value: 25,
-    valueText: '$25.00',
-    requiresAmount: false,
-    requiresConfirmation: true,
-    status: 'active',
-    statusText: 'Activo',
-    description: 'Configura el boleto con una tarifa final preferente.',
-  },
-  {
-    id: 4,
-    name: 'Cortesía total',
-    code: 'FULL_COURTESY',
-    designaCode: 'DSG-VAL-004',
-    type: 'courtesy',
-    typeText: 'Cortesía',
-    value: 100,
-    valueText: '100%',
-    requiresAmount: false,
-    requiresConfirmation: true,
-    status: 'inactive',
-    statusText: 'Inactivo',
-    description: 'Validación de cortesía total. Su uso debe estar restringido a perfiles autorizados.',
-  },
-];
+// Estado en memoria, cargado desde el backend
+let allDiscounts = [];
+let parkingSites = []; // [{ id, name }]
+let tenants = []; // [{ id, name }]
+let parkingSiteNameById = new Map();
+let tenantNameById = new Map();
+let currentResults = [];
 
-// Referencias a elementos del DOM
+// Referencias al DOM
 const totalDiscounts = document.getElementById('totalDiscounts');
 const activeDiscounts = document.getElementById('activeDiscounts');
-const amountRequiredDiscounts = document.getElementById('amountRequiredDiscounts');
-const designaMappedDiscounts = document.getElementById('designaMappedDiscounts');
+const discountsWithoutSite = document.getElementById('discountsWithoutSite');
+const discountsWithoutTenant = document.getElementById('discountsWithoutTenant');
 
 const discountsFilterForm = document.getElementById('discountsFilterForm');
 const clearDiscountFiltersButton = document.getElementById('clearDiscountFiltersButton');
@@ -78,7 +30,6 @@ const discountStatusFilter = document.getElementById('discountStatusFilter');
 
 const discountsAlert = document.getElementById('discountsAlert');
 const discountsResultCountBadge = document.getElementById('discountsResultCountBadge');
-
 const discountsTableBody = document.getElementById('discountsTableBody');
 
 const discountForm = document.getElementById('discountForm');
@@ -86,33 +37,44 @@ const discountFormModalLabel = document.getElementById('discountFormModalLabel')
 const discountId = document.getElementById('discountId');
 const formDiscountName = document.getElementById('formDiscountName');
 const formDiscountCode = document.getElementById('formDiscountCode');
-const formDesignaCode = document.getElementById('formDesignaCode');
+const formExternalCode = document.getElementById('formExternalCode');
 const formDiscountType = document.getElementById('formDiscountType');
-const formDiscountValue = document.getElementById('formDiscountValue');
 const formDiscountStatus = document.getElementById('formDiscountStatus');
-const formRequiresAmount = document.getElementById('formRequiresAmount');
-const formRequiresConfirmation = document.getElementById('formRequiresConfirmation');
 const formDiscountDescription = document.getElementById('formDiscountDescription');
+const discountParkingSitesContainer = document.getElementById('discountParkingSitesContainer');
+const discountTenantsContainer = document.getElementById('discountTenantsContainer');
 
 const detailDiscountName = document.getElementById('detailDiscountName');
 const detailDiscountStatus = document.getElementById('detailDiscountStatus');
 const detailDiscountCode = document.getElementById('detailDiscountCode');
-const detailDesignaCode = document.getElementById('detailDesignaCode');
+const detailExternalCode = document.getElementById('detailExternalCode');
 const detailDiscountType = document.getElementById('detailDiscountType');
-const detailDiscountValue = document.getElementById('detailDiscountValue');
-const detailRequiresAmount = document.getElementById('detailRequiresAmount');
-const detailRequiresConfirmation = document.getElementById('detailRequiresConfirmation');
 const detailDiscountDescription = document.getElementById('detailDiscountDescription');
+const detailDiscountParkingSites = document.getElementById('detailDiscountParkingSites');
+const detailDiscountTenants = document.getElementById('detailDiscountTenants');
 
-// Variable para mantener el estado actual de los resultados filtrados
-let currentResults = [...discountsMock];
-
-// Inicialización de la aplicación
+// Inicialización
 document.addEventListener('DOMContentLoaded', () => {
-  renderDiscounts(discountsMock);
+  initialize();
 });
 
-// Espera a que el usuario envíe el formulario de filtros para actualizar la tabla de resultados
+async function initialize() {
+  try {
+    [parkingSites, tenants] = await Promise.all([listParkingSites(), listTenants()]);
+    parkingSiteNameById = new Map(parkingSites.map((p) => [p.id, p.name]));
+    tenantNameById = new Map(tenants.map((t) => [t.id, t.name]));
+
+    renderScopeCheckboxes();
+
+    allDiscounts = await listDiscounts();
+    currentResults = [...allDiscounts];
+    renderDiscounts(currentResults);
+  } catch (error) {
+    showAlert('danger', `No se pudieron cargar los descuentos: ${error.message}`);
+  }
+}
+
+// Filtros
 discountsFilterForm?.addEventListener('submit', (event) => {
   event.preventDefault();
 
@@ -126,20 +88,18 @@ discountsFilterForm?.addEventListener('submit', (event) => {
   }
 });
 
-// Permite limpiar los filtros y mostrar todos los resultados nuevamente
 clearDiscountFiltersButton?.addEventListener('click', () => {
   discountsFilterForm.reset();
-  currentResults = [...discountsMock];
+  currentResults = [...allDiscounts];
   renderDiscounts(currentResults);
   hideAlert();
 });
 
-// Abre el modal para crear un nuevo descuento
 openCreateDiscountModalButton?.addEventListener('click', () => {
   openDiscountFormModal();
 });
 
-// Delegación de eventos para acciones dentro de la tabla de descuentos (ver detalle, editar, activar/desactivar)
+// Acciones en la tabla
 discountsTableBody?.addEventListener('click', (event) => {
   const actionButton = event.target.closest('[data-action]');
 
@@ -149,7 +109,7 @@ discountsTableBody?.addEventListener('click', (event) => {
 
   const action = actionButton.dataset.action;
   const id = Number(actionButton.dataset.id);
-  const discount = discountsMock.find((item) => item.id === id);
+  const discount = allDiscounts.find((item) => item.id === id);
 
   if (!discount) {
     showAlert('danger', 'No se encontró el descuento seleccionado.');
@@ -169,49 +129,91 @@ discountsTableBody?.addEventListener('click', (event) => {
   }
 });
 
-// Maneja el envío del formulario de creación/edición de descuento, validando los datos y actualizando el array de descuentos
-discountForm?.addEventListener('submit', (event) => {
+// Alta / edición
+discountForm?.addEventListener('submit', async (event) => {
   event.preventDefault();
 
-  const id = discountId.value ? Number(discountId.value) : null;
+  const isEditing = Boolean(discountId.value);
 
-  if (Number(formDiscountValue.value) < 0) {
-    showAlert('danger', 'El valor del descuento no puede ser negativo.');
-    return;
+  const uiDiscount = {
+    name: formDiscountName.value.trim(),
+    code: normalizeInternalCode(formDiscountCode.value),
+    externalCode: formExternalCode.value.trim(),
+    type: formDiscountType.value,
+    description: formDiscountDescription.value.trim(),
+    parkingSiteIds: getCheckedIds('.discount-parking-checkbox'),
+    tenantIds: getCheckedIds('.discount-tenant-checkbox'),
+    status: formDiscountStatus.value,
+  };
+
+  try {
+    if (isEditing) {
+      await updateDiscount(Number(discountId.value), uiDiscount);
+    } else {
+      await createDiscount(uiDiscount);
+    }
+
+    allDiscounts = await listDiscounts();
+    currentResults = filterDiscounts();
+    renderDiscounts(currentResults);
+
+    showAlert('success', isEditing ? 'Descuento actualizado correctamente.' : 'Descuento creado correctamente.');
+
+    window.bootstrap.Modal.getOrCreateInstance(document.getElementById('discountFormModal')).hide();
+  } catch (error) {
+    showAlert('danger', error.message);
   }
-
-  if (id) {
-    updateDiscount(id);
-    showAlert('success', 'Descuento actualizado correctamente.');
-  } else {
-    createDiscount();
-    showAlert('success', 'Descuento creado correctamente.');
-  }
-
-  currentResults = [...discountsMock];
-  renderDiscounts(currentResults);
-
-  const modal = window.bootstrap.Modal.getOrCreateInstance(document.getElementById('discountFormModal'));
-  modal.hide();
 });
 
-// Actualiza el texto de ayuda para el campo de valor según el tipo de descuento seleccionado
-formDiscountType?.addEventListener('change', () => {
-  updateValueHelperByType();
-});
+function renderScopeCheckboxes() {
+  discountParkingSitesContainer.innerHTML = buildCheckboxes(
+    parkingSites,
+    'discount-parking-checkbox',
+    'discount-parking',
+    'No hay unidades registradas.',
+  );
 
-// Funciones para filtrar, renderizar y manejar la lógica de descuentos
+  discountTenantsContainer.innerHTML = buildCheckboxes(
+    tenants,
+    'discount-tenant-checkbox',
+    'discount-tenant',
+    'No hay locatarios registrados.',
+  );
+}
+
+function buildCheckboxes(items, checkboxClass, idPrefix, emptyMessage) {
+  if (items.length === 0) {
+    return `<div class="col-12"><span class="text-muted">${emptyMessage}</span></div>`;
+  }
+
+  return items.map((item) => `
+    <div class="col-12 col-md-6">
+      <div class="form-check border rounded-3 p-3 ps-5 bg-light">
+        <input
+          class="form-check-input ${checkboxClass}"
+          type="checkbox"
+          value="${item.id}"
+          id="${idPrefix}-${item.id}"
+        >
+        <label class="form-check-label" for="${idPrefix}-${item.id}">
+          ${item.name}
+        </label>
+      </div>
+    </div>
+  `).join('');
+}
+
 function filterDiscounts() {
   const search = discountSearch.value.trim().toLowerCase();
   const type = discountTypeFilter.value;
   const status = discountStatusFilter.value;
 
-  return discountsMock.filter((discount) => {
+  return allDiscounts.filter((discount) => {
     const matchesSearch =
       !search ||
       discount.name.toLowerCase().includes(search) ||
       discount.code.toLowerCase().includes(search) ||
-      discount.designaCode.toLowerCase().includes(search) ||
+      discount.externalCode.toLowerCase().includes(search) ||
       discount.description.toLowerCase().includes(search);
 
     const matchesType = !type || discount.type === type;
@@ -221,7 +223,6 @@ function filterDiscounts() {
   });
 }
 
-// Renderiza la tabla de descuentos según el array proporcionado
 function renderDiscounts(discounts) {
   updateSummary();
   updateResultCount(discounts.length);
@@ -241,10 +242,10 @@ function renderDiscounts(discounts) {
     <tr>
       <td><strong>${discount.name}</strong></td>
       <td><span class="badge text-bg-light">${discount.code}</span></td>
-      <td>${discount.designaCode || '<span class="text-muted">Sin mapear</span>'}</td>
+      <td>${discount.externalCode || '<span class="text-muted">Sin mapear</span>'}</td>
       <td>${renderTypeBadge(discount)}</td>
-      <td>${discount.valueText}</td>
-      <td>${renderBooleanBadge(discount.requiresAmount)}</td>
+      <td>${renderScopeBadge(discount.parkingSiteIds.length, 'unidad', 'unidades')}</td>
+      <td>${renderScopeBadge(discount.tenantIds.length, 'locatario', 'locatarios')}</td>
       <td>${renderStatusBadge(discount)}</td>
       <td class="text-end">
         <div class="btn-group">
@@ -283,20 +284,17 @@ function renderDiscounts(discounts) {
   `).join('');
 }
 
-// Actualiza los contadores de resumen en la parte superior de la página
 function updateSummary() {
-  totalDiscounts.textContent = String(discountsMock.length);
-  activeDiscounts.textContent = String(discountsMock.filter((discount) => discount.status === 'active').length);
-  amountRequiredDiscounts.textContent = String(discountsMock.filter((discount) => discount.requiresAmount).length);
-  designaMappedDiscounts.textContent = String(discountsMock.filter((discount) => Boolean(discount.designaCode)).length);
+  totalDiscounts.textContent = String(allDiscounts.length);
+  activeDiscounts.textContent = String(allDiscounts.filter((d) => d.status === 'active').length);
+  discountsWithoutSite.textContent = String(allDiscounts.filter((d) => d.parkingSiteIds.length === 0).length);
+  discountsWithoutTenant.textContent = String(allDiscounts.filter((d) => d.tenantIds.length === 0).length);
 }
 
-// Actualiza el contador de resultados mostrados junto a la tabla
 function updateResultCount(count) {
   discountsResultCountBadge.textContent = `${count} descuento${count === 1 ? '' : 's'}`;
 }
 
-// Renderiza un badge de estado con color según el estado del descuento
 function renderStatusBadge(discount) {
   if (discount.status === 'active') {
     return `<span class="badge text-bg-success">${discount.statusText}</span>`;
@@ -305,7 +303,6 @@ function renderStatusBadge(discount) {
   return `<span class="badge text-bg-secondary">${discount.statusText}</span>`;
 }
 
-// Renderiza un badge de tipo con color según el tipo de descuento
 function renderTypeBadge(discount) {
   const badgeClassByType = {
     time: 'text-bg-primary',
@@ -319,134 +316,112 @@ function renderTypeBadge(discount) {
   return `<span class="badge ${className}">${discount.typeText}</span>`;
 }
 
-// Renderiza un badge de "Sí" o "No" para campos booleanos como "Requiere monto" o "Requiere confirmación"
-function renderBooleanBadge(value) {
-  if (value) {
-    return '<span class="badge text-bg-warning">Sí</span>';
+/** Un descuento sin unidades o sin locatarios no lo ve nadie: lo marcamos. */
+function renderScopeBadge(count, singular, plural) {
+  if (count === 0) {
+    return '<span class="badge text-bg-warning">Ninguno</span>';
   }
 
-  return '<span class="badge text-bg-light">No</span>';
+  return `<span class="badge text-bg-light">${count} ${count === 1 ? singular : plural}</span>`;
 }
 
-// Abre el modal para crear o editar un descuento, y si se proporciona un descuento, llena el formulario con sus datos para edición
 function openDiscountFormModal(discount = null) {
   discountForm.reset();
   discountId.value = '';
+  clearCheckboxes();
 
   if (discount) {
     discountFormModalLabel.textContent = 'Editar descuento';
     discountId.value = discount.id;
     formDiscountName.value = discount.name;
     formDiscountCode.value = discount.code;
-    formDesignaCode.value = discount.designaCode;
+    formExternalCode.value = discount.externalCode;
     formDiscountType.value = discount.type;
-    formDiscountValue.value = discount.value;
     formDiscountStatus.value = discount.status;
-    formRequiresAmount.checked = discount.requiresAmount;
-    formRequiresConfirmation.checked = discount.requiresConfirmation;
     formDiscountDescription.value = discount.description;
+    setCheckedIds('.discount-parking-checkbox', discount.parkingSiteIds);
+    setCheckedIds('.discount-tenant-checkbox', discount.tenantIds);
   } else {
     discountFormModalLabel.textContent = 'Nuevo descuento';
     formDiscountStatus.value = 'active';
-    formRequiresConfirmation.checked = true;
   }
 
-  updateValueHelperByType();
-
-  const modal = window.bootstrap.Modal.getOrCreateInstance(document.getElementById('discountFormModal'));
-  modal.show();
+  window.bootstrap.Modal.getOrCreateInstance(document.getElementById('discountFormModal')).show();
 }
 
-// Crea un nuevo descuento con los datos del formulario y lo agrega al array de descuentos
-function createDiscount() {
-  const newDiscount = {
-    id: getNextDiscountId(),
-    name: formDiscountName.value.trim(),
-    code: normalizeInternalCode(formDiscountCode.value),
-    designaCode: formDesignaCode.value.trim(),
-    type: formDiscountType.value,
-    typeText: getTypeText(formDiscountType.value),
-    value: Number(formDiscountValue.value),
-    valueText: formatValue(formDiscountType.value, Number(formDiscountValue.value)),
-    requiresAmount: formRequiresAmount.checked,
-    requiresConfirmation: formRequiresConfirmation.checked,
-    status: formDiscountStatus.value,
-    statusText: getStatusText(formDiscountStatus.value),
-    description: formDiscountDescription.value.trim() || 'Sin descripción registrada.',
-  };
-
-  discountsMock = [newDiscount, ...discountsMock];
-}
-
-// Actualiza un descuento existente con los datos del formulario y actualiza el array de descuentos
-function updateDiscount(id) {
-  discountsMock = discountsMock.map((discount) => {
-    if (discount.id !== id) {
-      return discount;
+async function toggleDiscountStatus(discount) {
+  try {
+    if (discount.status === 'active') {
+      await deactivateDiscount(discount.id);
+    } else {
+      await reactivateDiscount(discount.id);
     }
 
-    return {
-      ...discount,
-      name: formDiscountName.value.trim(),
-      code: normalizeInternalCode(formDiscountCode.value),
-      designaCode: formDesignaCode.value.trim(),
-      type: formDiscountType.value,
-      typeText: getTypeText(formDiscountType.value),
-      value: Number(formDiscountValue.value),
-      valueText: formatValue(formDiscountType.value, Number(formDiscountValue.value)),
-      requiresAmount: formRequiresAmount.checked,
-      requiresConfirmation: formRequiresConfirmation.checked,
-      status: formDiscountStatus.value,
-      statusText: getStatusText(formDiscountStatus.value),
-      description: formDiscountDescription.value.trim() || 'Sin descripción registrada.',
-    };
-  });
+    allDiscounts = await listDiscounts();
+    currentResults = filterDiscounts();
+    renderDiscounts(currentResults);
+
+    showAlert(
+      'success',
+      `Descuento ${discount.name} ${discount.status === 'active' ? 'desactivado' : 'activado'} correctamente.`,
+    );
+  } catch (error) {
+    showAlert('danger', error.message);
+  }
 }
 
-// Cambia el estado de un descuento entre activo e inactivo, actualiza el array de descuentos y muestra una alerta con el resultado
-function toggleDiscountStatus(discount) {
-  const newStatus = discount.status === 'active' ? 'inactive' : 'active';
-
-  discountsMock = discountsMock.map((item) => {
-    if (item.id !== discount.id) {
-      return item;
-    }
-
-    return {
-      ...item,
-      status: newStatus,
-      statusText: getStatusText(newStatus),
-    };
-  });
-
-  currentResults = filterDiscounts();
-  renderDiscounts(currentResults);
-
-  showAlert(
-    'success',
-    `Descuento ${discount.name} ${newStatus === 'active' ? 'activado' : 'desactivado'} correctamente.`
-  );
-}
-
-// Abre el modal de detalle y llena la información con los datos del descuento seleccionado
 function showDiscountDetail(discount) {
   detailDiscountName.textContent = discount.name;
   detailDiscountCode.textContent = discount.code;
-  detailDesignaCode.textContent = discount.designaCode || 'Sin mapear';
+  detailExternalCode.textContent = discount.externalCode || 'Sin mapear';
   detailDiscountType.textContent = discount.typeText;
-  detailDiscountValue.textContent = discount.valueText;
-  detailRequiresAmount.textContent = discount.requiresAmount ? 'Sí' : 'No';
-  detailRequiresConfirmation.textContent = discount.requiresConfirmation ? 'Sí' : 'No';
-  detailDiscountDescription.textContent = discount.description;
+  detailDiscountDescription.textContent = discount.description || 'Sin descripción registrada.';
 
   detailDiscountStatus.textContent = discount.statusText;
   detailDiscountStatus.className = `badge ${discount.status === 'active' ? 'text-bg-success' : 'text-bg-secondary'}`;
 
-  const modal = window.bootstrap.Modal.getOrCreateInstance(document.getElementById('discountDetailModal'));
-  modal.show();
+  detailDiscountParkingSites.innerHTML = renderNameBadges(
+    discount.parkingSiteIds,
+    parkingSiteNameById,
+    'Sin unidades asignadas (nadie lo verá)',
+  );
+
+  detailDiscountTenants.innerHTML = renderNameBadges(
+    discount.tenantIds,
+    tenantNameById,
+    'Sin locatarios asignados (ningún locatario lo verá)',
+  );
+
+  window.bootstrap.Modal.getOrCreateInstance(document.getElementById('discountDetailModal')).show();
 }
 
-// Normaliza un código interno eliminando espacios, convirtiendo a mayúsculas y reemplazando caracteres no permitidos por guiones bajos
+function renderNameBadges(ids, nameById, emptyMessage) {
+  const names = ids.map((id) => nameById.get(id)).filter(Boolean);
+
+  if (names.length === 0) {
+    return `<span class="text-muted">${emptyMessage}</span>`;
+  }
+
+  return names.map((name) => `<span class="badge text-bg-light">${name}</span>`).join('');
+}
+
+function getCheckedIds(selector) {
+  return [...document.querySelectorAll(`${selector}:checked`)].map((checkbox) => Number(checkbox.value));
+}
+
+function setCheckedIds(selector, ids) {
+  document.querySelectorAll(selector).forEach((checkbox) => {
+    checkbox.checked = ids.includes(Number(checkbox.value));
+  });
+}
+
+function clearCheckboxes() {
+  document.querySelectorAll('.discount-parking-checkbox, .discount-tenant-checkbox').forEach((checkbox) => {
+    checkbox.checked = false;
+  });
+}
+
+/** Normaliza el código interno: MAYÚSCULAS_CON_GUIONES_BAJOS. */
 function normalizeInternalCode(value) {
   return value
     .trim()
@@ -455,77 +430,11 @@ function normalizeInternalCode(value) {
     .replace(/[^A-Z0-9_]/g, '');
 }
 
-// Obtiene el texto legible para un tipo de descuento dado su valor interno
-function getTypeText(type) {
-  const typeMap = {
-    time: 'Tiempo',
-    percentage: 'Porcentaje',
-    fixed_rate: 'Tarifa fija',
-    courtesy: 'Cortesía',
-  };
-
-  return typeMap[type] || 'No definido';
-}
-
-// Obtiene el texto legible para un estado dado su valor interno
-function getStatusText(status) {
-  if (status === 'active') {
-    return 'Activo';
-  }
-
-  return 'Inactivo';
-}
-
-//
-function formatValue(type, value) {
-  if (type === 'time') {
-    return `${value} min`;
-  }
-
-  if (type === 'percentage' || type === 'courtesy') {
-    return `${value}%`;
-  }
-
-  if (type === 'fixed_rate') {
-    return new Intl.NumberFormat('es-MX', {
-      style: 'currency',
-      currency: 'MXN',
-    }).format(value);
-  }
-
-  return String(value);
-}
-
-// Actualiza el texto de ayuda debajo del campo de valor según el tipo de descuento seleccionado para guiar al usuario en la entrada correcta de datos
-function updateValueHelperByType() {
-  const helper = formDiscountValue?.nextElementSibling;
-
-  if (!helper) {
-    return;
-  }
-
-  const helperTextByType = {
-    time: 'Captura minutos. Ejemplo: 120 para dos horas.',
-    percentage: 'Captura porcentaje. Ejemplo: 50 para 50%.',
-    fixed_rate: 'Captura monto final. Ejemplo: 25 para $25.00.',
-    courtesy: 'Captura 100 para cortesía total.',
-  };
-
-  helper.textContent = helperTextByType[formDiscountType.value] || 'Ejemplo: minutos, porcentaje, monto fijo o 100 para cortesía.';
-}
-
-// Obtiene el siguiente ID disponible para un nuevo descuento basado en el array actual de descuentos
-function getNextDiscountId() {
-  return discountsMock.length ? Math.max(...discountsMock.map((discount) => discount.id)) + 1 : 1;
-}
-
-// Muestra una alerta en la parte superior de la tabla de resultados con el mensaje y tipo especificados (success, warning, danger)
 function showAlert(type, message) {
   discountsAlert.className = `alert alert-${type}`;
   discountsAlert.textContent = message;
 }
 
-// Oculta la alerta y limpia su contenido
 function hideAlert() {
   discountsAlert.className = 'alert d-none';
   discountsAlert.textContent = '';
