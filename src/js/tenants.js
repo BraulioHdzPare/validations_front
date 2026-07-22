@@ -6,6 +6,7 @@ import {
   reactivateTenant,
 } from './tenants-api.js';
 import { listParkingSites, listUsersLite } from './lookups-api.js';
+import { escapeHtml } from './html.js';
 
 // Estado en memoria, cargado desde el backend
 let allTenants = [];
@@ -190,7 +191,7 @@ function renderParkingSiteCheckboxes() {
           id="tenant-parking-${site.id}"
         >
         <label class="form-check-label" for="tenant-parking-${site.id}">
-          ${site.name}
+          ${escapeHtml(site.name)}
         </label>
       </div>
     </div>
@@ -234,8 +235,8 @@ function renderTenants(tenants) {
 
     return `
     <tr>
-      <td><strong>${tenant.commercialName || '<span class="text-muted">Sin nombre comercial</span>'}</strong></td>
-      <td>${tenant.businessName}</td>
+      <td><strong>${escapeHtml(tenant.commercialName) || '<span class="text-muted">Sin nombre comercial</span>'}</strong></td>
+      <td>${escapeHtml(tenant.businessName)}</td>
       <td>
         <span class="badge text-bg-light">
           ${siteCount} unidad${siteCount === 1 ? '' : 'es'}
@@ -368,7 +369,7 @@ function showTenantDetail(tenant) {
         <div class="d-flex align-items-center justify-content-between border rounded-3 p-2 bg-light">
           <span>
             <i class="bi bi-person-circle me-1"></i>
-            ${username}
+            ${escapeHtml(username)}
           </span>
           <span class="badge text-bg-secondary">Usuario</span>
         </div>
@@ -380,7 +381,7 @@ function showTenantDetail(tenant) {
     .filter(Boolean);
 
   detailTenantParkingSites.innerHTML = siteNames.length
-    ? siteNames.map((name) => `<span class="badge text-bg-light">${name}</span>`).join('')
+    ? siteNames.map((name) => `<span class="badge text-bg-light">${escapeHtml(name)}</span>`).join('')
     : '<span class="text-muted">Sin unidades asignadas</span>';
 
   window.bootstrap.Modal.getOrCreateInstance(document.getElementById('tenantDetailModal')).show();

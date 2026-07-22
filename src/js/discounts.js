@@ -6,6 +6,7 @@ import {
   reactivateDiscount,
 } from './discounts-api.js';
 import { listParkingSites, listTenants } from './lookups-api.js';
+import { escapeHtml } from './html.js';
 
 // Estado en memoria, cargado desde el backend
 let allDiscounts = [];
@@ -196,7 +197,7 @@ function buildCheckboxes(items, checkboxClass, idPrefix, emptyMessage) {
           id="${idPrefix}-${item.id}"
         >
         <label class="form-check-label" for="${idPrefix}-${item.id}">
-          ${item.name}
+          ${escapeHtml(item.name)}
         </label>
       </div>
     </div>
@@ -240,9 +241,9 @@ function renderDiscounts(discounts) {
 
   discountsTableBody.innerHTML = discounts.map((discount) => `
     <tr>
-      <td><strong>${discount.name}</strong></td>
-      <td><span class="badge text-bg-light">${discount.code}</span></td>
-      <td>${discount.externalCode || '<span class="text-muted">Sin mapear</span>'}</td>
+      <td><strong>${escapeHtml(discount.name)}</strong></td>
+      <td><span class="badge text-bg-light">${escapeHtml(discount.code)}</span></td>
+      <td>${escapeHtml(discount.externalCode) || '<span class="text-muted">Sin mapear</span>'}</td>
       <td>${renderTypeBadge(discount)}</td>
       <td>${renderScopeBadge(discount.parkingSiteIds.length, 'unidad', 'unidades')}</td>
       <td>${renderScopeBadge(discount.tenantIds.length, 'locatario', 'locatarios')}</td>
@@ -402,7 +403,7 @@ function renderNameBadges(ids, nameById, emptyMessage) {
     return `<span class="text-muted">${emptyMessage}</span>`;
   }
 
-  return names.map((name) => `<span class="badge text-bg-light">${name}</span>`).join('');
+  return names.map((name) => `<span class="badge text-bg-light">${escapeHtml(name)}</span>`).join('');
 }
 
 function getCheckedIds(selector) {

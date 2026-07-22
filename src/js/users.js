@@ -7,6 +7,7 @@ import {
   setUserPassword,
 } from './users-api.js';
 import { listTenants, listParkingSites } from './lookups-api.js';
+import { escapeHtml } from './html.js';
 
 // Estado en memoria, cargado desde el backend
 let allUsers = [];
@@ -266,9 +267,9 @@ function renderUsers(users) {
 
   usersTableBody.innerHTML = users.map((user) => `
     <tr>
-      <td><strong>${user.username}</strong></td>
-      <td>${user.fullName}</td>
-      <td>${user.email || '<span class="text-muted">—</span>'}</td>
+      <td><strong>${escapeHtml(user.username)}</strong></td>
+      <td>${escapeHtml(user.fullName)}</td>
+      <td>${escapeHtml(user.email) || '<span class="text-muted">—</span>'}</td>
       <td>${renderRoleBadge(user)}</td>
       <td>${tenantLabel(user)}</td>
       <td>${renderStatusBadge(user)}</td>
@@ -348,7 +349,7 @@ function renderStatusBadge(user) {
 
 function tenantLabel(user) {
   if (user.tenantId && tenantNameById.has(user.tenantId)) {
-    return tenantNameById.get(user.tenantId);
+    return escapeHtml(tenantNameById.get(user.tenantId));
   }
   return '<span class="text-muted">Sin locatario</span>';
 }
