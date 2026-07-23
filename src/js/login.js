@@ -19,6 +19,11 @@ const togglePasswordIcon = document.getElementById('togglePasswordIcon');
 
 usernameInput?.focus();
 
+// Si la sesión anterior se cerró por inactividad, avisar al usuario.
+if (new URLSearchParams(window.location.search).get('reason') === 'inactivity') {
+  showAlert('warning', 'Tu sesión se cerró por inactividad. Vuelve a iniciar sesión.');
+}
+
 // Lógica de envío del formulario
 loginForm?.addEventListener('submit', async (event) => {
   event.preventDefault();

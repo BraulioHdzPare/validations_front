@@ -1,5 +1,6 @@
 import { requireAuth, clearSession, isAdmin, getRefreshToken } from './auth.js';
 import { apiClient } from './api-client.js';
+import { startInactivityWatch } from './session-timeout.js';
 
 // Páginas a las que solo puede acceder el administrador.
 // Si un locatario intenta acceder directamente por URL, se le redirige al dashboard.
@@ -12,6 +13,7 @@ if (user) {
   applyRoleRestrictions(user);
   applyRouteGuard(user);
   bindLogout();
+  startInactivityWatch();
 }
 
 // Muestra el nombre real del usuario en el botón del navbar superior.

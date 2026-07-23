@@ -55,6 +55,30 @@ export function saveSession(tokens, user, remember = false) {
   }));
 }
 
+/** Devuelve el storage donde vive la sesión actual (localStorage si se marcó
+ * "recordar", si no sessionStorage). Null si no hay sesión. */
+function activeStorage() {
+  if (localStorage.getItem(SESSION_KEY)) return localStorage;
+  if (sessionStorage.getItem(SESSION_KEY)) return sessionStorage;
+  return null;
+}
+
+/**
+ * Reemplaza los tokens tras un refresh (rotación), en el mismo storage donde
+ * ya vive la sesión. No toca el perfil. Con ROTATE_REFRESH_TOKENS el backend
+ * devuelve también un refresh nuevo; hay que persistirlo o el siguiente refresh
+ * usaría el anterior (ya en blacklist) y fallaría.
+ */
+export function updateTokens(tokens) {
+  const storage = activeStorage();
+  if (!storage) return;
+
+  storage.setItem(ACCESS_TOKEN_KEY, tokens.access);
+  if (tokens.refresh) {
+    storage.setItem(REFRESH_TOKEN_KEY, tokens.refresh);
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Limpieza
 // ---------------------------------------------------------------------------
