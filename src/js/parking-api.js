@@ -44,7 +44,6 @@ export async function searchTicket(ticketNumber) {
     discounts: (data.validation_options ?? []).map((opt) => ({
       id: String(opt.code),
       name: opt.name,
-      estimatedFinalAmount: 0, // El monto final real lo calcula el backend al aplicar
     })),
   };
 }
@@ -76,8 +75,9 @@ export async function applyValidation(ticketNumber, discountId) {
     success: data.success,
     message: data.message ?? 'Validación aplicada correctamente.',
     ticketNumber,
-    finalAmount: data.final_amount ?? 0,
-    originalAmount: data.original_amount ?? 0,
+    // null cuando el proveedor no devuelve monto — NO 0 (0 es un final válido: cortesía 100%).
+    finalAmount: data.final_amount ?? null,
+    originalAmount: data.original_amount ?? null,
     appliedAt: new Date().toISOString(),
   };
 }

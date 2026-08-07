@@ -20,7 +20,6 @@ const confirmValidationButton = document.getElementById('confirmValidationButton
 const modalTicketNumber = document.getElementById('modalTicketNumber');
 const modalDiscountName = document.getElementById('modalDiscountName');
 const modalCurrentAmount = document.getElementById('modalCurrentAmount');
-const modalFinalAmount = document.getElementById('modalFinalAmount');
 
 const testTicketButtons = document.querySelectorAll('.test-ticket-btn');
 
@@ -91,7 +90,6 @@ openConfirmModalButton?.addEventListener('click', () => {
   modalTicketNumber.textContent = currentTicket.ticketNumber;
   modalDiscountName.textContent = selectedDiscount.name;
   modalCurrentAmount.textContent = currencyFormatter.format(currentTicket.currentAmount);
-  modalFinalAmount.textContent = currencyFormatter.format(selectedDiscount.estimatedFinalAmount);
 
   const modalElement = document.getElementById('confirmValidationModal');
   const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
@@ -116,10 +114,11 @@ confirmValidationButton?.addEventListener('click', async () => {
     const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
     modal.hide();
 
-    showAlert(
-      'success',
-      `${response.message} Monto final estimado: ${currencyFormatter.format(response.finalAmount)}.`
-    );
+    // El monto final solo se muestra si el backend lo devolvió; si es null, solo el mensaje.
+    const successMessage = response.finalAmount != null
+      ? `${response.message} Monto final: ${currencyFormatter.format(Number(response.finalAmount))}.`
+      : response.message;
+    showAlert('success', successMessage);
 
     openConfirmModalButton.disabled = true;
     discountType.disabled = true;
@@ -172,7 +171,7 @@ function renderDiscounts(discounts) {
   discounts.forEach((discount) => {
     const option = document.createElement('option');
     option.value = discount.id;
-    option.textContent = `${discount.name} - Final estimado ${currencyFormatter.format(discount.estimatedFinalAmount)}`;
+    option.textContent = discount.name;
     discountType.appendChild(option);
   });
 
